@@ -445,7 +445,7 @@ La información mostrada tiene carácter **orientativo**. Este proyecto no garan
 
 ## Aviso para titulares de farmacias
 
-FarmaFLUSH utiliza datos de acceso público para fomentar la transparencia de precios. Si es usted titular de una farmacia indexada y desea que sus datos sean excluidos de futuras comparativas, puede solicitar la baja abriendo una incidencia en nuestro repositorio oficial:
+***FarmaFLUSH*** **utiliza datos de acceso público** para fomentar la transparencia de precios. Si es usted titular de una farmacia indexada y desea que sus datos sean excluidos de futuras comparativas, puede solicitar la baja abriendo una incidencia en nuestro repositorio oficial:
 
 [Solicitar exclusión vía GitHub Issues](https://github.com/sapoclay/farmaflush/issues)
 
