@@ -8,11 +8,11 @@ Verificador de precios farmacéuticos basado en el Nomenclátor oficial del SNS 
 
 ## Propuesta de valor
 
-| Lo que NO somos | Lo que SÍ somos |
+| Lo que NO hacemos | Lo que SÍ somos |
 |---|---|
-| ❌ Comparador de "el más barato" | ✅ Verificador de precio correcto vs oficial |
+| ❌ Comparar y buscar "el más barato" | ✅ Verificador de precio correcto vs oficial |
 | ❌ Agregador de ofertas | ✅ Referencia al PVP máximo intervenido por ley |
-| ❌ Acusamos a nadie | ✅ Educamos + alertamos con fuente oficial |
+| ❌ Acusar a nadie | ✅ Educamos + alertamos con fuente oficial |
 
 **Core:** ¿El precio que me han cobrado coincide con el PVP oficial del Nomenclátor SNS?  
 **Secundario:** Comparativa de precios de parafarmacia en farmacias online.
