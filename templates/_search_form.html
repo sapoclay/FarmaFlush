@@ -15,7 +15,7 @@
             <fieldset class="search-input-group">
                 <input type="search" id="search-input" name="q" value="{{ q|default('') }}"
                        placeholder="Busca Nolotil, Voltarén o Paracetamol…"
-                       autofocus autocomplete="off" required minlength="2">
+                       autocomplete="off" required minlength="2">
                 <button type="submit">Buscar</button>
             </fieldset>
         </div>
@@ -34,6 +34,9 @@
             ];
             var input = document.getElementById('search-input');
             if (!input || input.value.trim() !== '') return;
+
+            // Enfocar sin forzar scroll al input
+            input.focus({ preventScroll: true });
 
             var idx = Math.floor(Math.random() * terms.length);
             input.placeholder = terms[idx];

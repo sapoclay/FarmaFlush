@@ -1,8 +1,16 @@
 # 💊 FarmaFLUSH — Verificador de precio de medicamentos en España
 
-**Dime qué te han cobrado. Te digo si es correcto.**
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Python: 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)
+![Framework: Flask](https://img.shields.io/badge/framework-Flask-lightgrey.svg)
 
-Verificador de precios farmacéuticos basado en el Nomenclátor oficial del SNS (AEMPS / Ministerio de Sanidad) + comparador de precios online en parafarmacia.
+Verificador de precios de medicamentos (PVP Oficial) y comparador de parafarmacia.
+
+FarmaFLUSH es una aplicación web (PWA) diseñada para estar informados sobre "posibles" irregularidades en el cobro de medicamentos. La herramienta permite verificar en segundos si el precio cobrado coincide con el PVP máximo oficial regulado por el Ministerio de Sanidad (Nomenclátor).
+
+**Propósito del proyecto**
+
+Este proyecto nace de una necesidad real y personal: garantizar que el derecho a la salud no se vea afectado por "errores" en el redondeo o sobreprecios aplicados a medicamentos con precio regulado. FarmaFLUSH utiliza datos abiertos y técnicas de agregación de datos para ofrecer transparencia inmediata al ciudadano.
 
 ---
 
@@ -14,8 +22,8 @@ Verificador de precios farmacéuticos basado en el Nomenclátor oficial del SNS 
 | ❌ Agregador de ofertas | ✅ Referencia al PVP máximo intervenido por ley |
 | ❌ Acusar a nadie | ✅ Educamos + alertamos con fuente oficial |
 
-**Core:** ¿El precio que me han cobrado coincide con el PVP oficial del Nomenclátor SNS?  
-**Secundario:** Comparativa de precios de parafarmacia en farmacias online.
+**Primaria:** ¿El precio que me han cobrado coincide con el PVP oficial del Nomenclátor SNS?  
+**Secundaria:** Comparativa de precios de parafarmacia en farmacias online.
 
 ---
 
@@ -28,7 +36,7 @@ FarmaFLUSH tiene **dos capas funcionalmente separadas** que nunca se mezclan en 
 | 🏛️ **Verificador** | `/verificar-precio` · `/verificar-ticket` | Nomenclátor SNS (AEMPS) | Regulado (PVP máximo intervenido) |
 | 🧴 **Comparador** | `/parafarmacia` | Farmacias online (scraping) | Libre (mercado) |
 
-**Regla de oro:** el verificador nunca muestra precios de farmacias online; el comparador nunca menciona el PVP oficial del SNS como referencia de comparación.
+**Regla de oro:** el verificador nunca muestra precios de farmacias online en cuanto a medicamentos se refiere; el comparador nunca menciona el PVP oficial del SNS como referencia de comparación.
 
 El puente entre ambas capas es un enlace discreto al pie del resultado del verificador: _"¿Buscas este producto en farmacias online? → Ver opciones de compra"_. Así el usuario accede al comparador si lo desea, pero los dos contextos (regulado vs libre) permanecen visualmente y conceptualmente separados.
 
@@ -45,6 +53,8 @@ El puente entre ambas capas es un enlace discreto al pie del resultado del verif
 | Fuentes principales | CIMA (AEMPS) REST API · Nomenclátor SNS (PVP oficial) · Vademécum · BIFIMED (Ministerio de Sanidad) |
 | Fuentes online | Dosfarma · Farmacia Tedin · Farmacias Direct · Castrofarma · Farmacia Barata · FarmaGalicia · OpenFarma · Farmacia Pontevea · Gomezulla |
 
+**Exclusión voluntaria (Opt-out):**
+Este proyecto respeta la voluntad de los comercios analizados. Aunque la aplicación utiliza datos públicos y accesibles por cualquier usuario en la web, ofrecemos a los titulares de las farmacias la posibilidad de ser eliminados del motor de búsqueda. Para solicitar la retirada de su catálogo de nuestra base de datos, dirígase a la sección **Aviso para titulares de farmacias**, situada al final de esta documentación.
 ---
 
 ## Configuración antes de usar
@@ -58,8 +68,6 @@ Copia `.env.example` a `.env` y ajusta los siguientes valores **antes** de arran
 | `DATABASE_PATH` | Ruta al archivo SQLite. Por defecto `data/pildora.db`. | Opcional. Cambia solo si quieres almacenar la BD en otra ubicación. |
 | `NOMENCLATOR_CSV_URL` | URL del CSV del Nomenclátor SNS. | No es necesario cambiarla salvo que la URL oficial varíe. |
 | `CIMA_API_BASE` | Base URL de la API REST de CIMA (AEMPS). | No es necesario cambiarla salvo que cambie el endpoint oficial. |
-
-> El archivo `.env` **nunca debe subirse al repositorio**. Está incluido en `.gitignore`.
 
 ---
 
@@ -280,7 +288,7 @@ La situación se obtiene scrapeando el formulario BIFIMED en dos pasos (GET de c
 ### 5. Comparativa de precios online (parafarmacia)
 
 - Búsqueda paralela en 9 farmacias online españolas
-- El usuario puede introducir su precio de mostrador para comparar
+- El usuario puede o no introducir su precio de mostrador para comparar
 - Transparencia de fuentes: indica explícitamente qué farmacias no tienen el producto
 - Enlace directo a la ficha de cada producto en cada farmacia
 
@@ -398,16 +406,6 @@ conn.execute('PRAGMA journal_mode=WAL')
 
 ---
 
-## 📈 Casos de uso
-
-1. **Verificar ticket**: "Tengo 4 medicamentos en el ticket — ¿alguno está mal cobrado?"
-2. **Precio individual**: "Me han cobrado 7,50 € por el ibuprofeno 600mg. ¿Es correcto?"
-3. **Consulta de información**: "¿Qué es el Naso Faes? ¿Para qué se usa?"
-4. **Comparativa parafarmacia**: "¿Cuánto cuesta esta crema en farmacias online?"
-5. **Encontrar OTC**: "¿Dónde compro Nolotil sin receta?"
-
----
-
 ## 🚀 Roadmap
 
 - [ ] Modo ticket: exportar resultado en PDF
@@ -420,7 +418,7 @@ conn.execute('PRAGMA journal_mode=WAL')
 
 ## 📝 Licencia y aviso legal
 
-Este proyecto es de uso personal y educativo, sin ánimo de lucro.
+Este proyecto es de uso personal y educativo para practicar con Flask y Python, sin ánimo de lucro.
 
 ### Datos oficiales
 
@@ -442,5 +440,22 @@ Si eres titular de alguna de las farmacias referenciadas y deseas que tu estable
 ### Exención de responsabilidad
 
 La información mostrada tiene carácter **orientativo**. Este proyecto no garantiza la exactitud, completitud ni actualidad de los precios mostrados. El PVP oficial del Nomenclátor SNS puede no coincidir con el precio vigente en el momento de la consulta si ha habido actualizaciones recientes. El autor no se hace responsable de decisiones tomadas en base a la información proporcionada por esta herramienta.
+
+---
+
+## Aviso para titulares de farmacias
+
+FarmaFLUSH utiliza datos de acceso público para fomentar la transparencia de precios. Si es usted titular de una farmacia indexada y desea que sus datos sean excluidos de futuras comparativas, puede solicitar la baja abriendo una incidencia en nuestro repositorio oficial:
+
+[Solicitar exclusión vía GitHub Issues](https://github.com/sapoclay/farmaflush/issues)
+
+Para solicitar que dejen de indexarse los datos de un establecimiento, abra una Nueva Issue con el título "Solicitud de Exclusión - [Nombre de la Farmacia]" e incluya:
+
+    URL del dominio a excluir.
+
+    Breve acreditación de la titularidad.
+
+> **Nota:** Se requiere una cuenta de GitHub para garantizar la trazabilidad de la solicitud.
+
 
 

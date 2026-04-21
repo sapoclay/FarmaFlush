@@ -78,6 +78,7 @@
         }
         html {
             scroll-behavior: smooth;
+            overflow-anchor: none;
         }
         a,
         a:hover,
@@ -300,23 +301,15 @@
             width: 100%;
             text-align: center;
             overflow: hidden;
-            max-height: 400px;
             opacity: 1;
             margin: 0;
-            transition: max-height 0.35s ease, opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        /* Logo compacto: se activa al hacer scroll o al mostrar resultados */
+        /* Logo compacto: ocultar visualmente sin cambiar la altura del documento (evita scroll jump) */
         .logo-compacto .search-branding-block {
-            max-height: 0 !important;
             opacity: 0;
-            margin: 0;
-            padding: 0;
+            visibility: hidden;
             pointer-events: none;
-        }
-        .logo-compacto .hero-logo {
-            width: 0;
-            margin: 0;
-            opacity: 0;
         }
         .search-section {
             max-width: 600px;
@@ -806,6 +799,8 @@
             <small style="opacity:0.55">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 5px;"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>Este proyecto es Open Source. Ver código en <a href="https://github.com/sapoclay/farmaflush" target="_blank" rel="noopener">GitHub</a>
             </small>
+
+
         </div>
     </footer>
 
@@ -876,6 +871,7 @@
         (function () {
             var UMBRAL = 80; // px de scroll para compactar
             var tieneHeroLogo = !!document.querySelector('.hero-logo');
+            var estaCompacto = false;
 
             function actualizarLogo() {
                 if (!tieneHeroLogo) {
@@ -884,10 +880,12 @@
                     return;
                 }
                 var scrollY = window.scrollY || window.pageYOffset;
-                if (scrollY > UMBRAL) {
+                if (scrollY > UMBRAL && !estaCompacto) {
                     document.body.classList.add('logo-compacto');
-                } else {
+                    estaCompacto = true;
+                } else if (scrollY <= UMBRAL && estaCompacto) {
                     document.body.classList.remove('logo-compacto');
+                    estaCompacto = false;
                 }
             }
 

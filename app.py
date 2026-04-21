@@ -18,6 +18,7 @@ logging.basicConfig(level=logging.DEBUG if DEBUG else logging.INFO)
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 init_db()
 
@@ -197,13 +198,9 @@ def _extraer_inn_base(inn_completo: str) -> str:
 
 def _consultas_farmacia_alternativas(med: dict, complemento: dict | None = None) -> list[str]:
     consultas = []
-    # Incluir la búsqueda original del usuario como consulta prioritaria
-    qorig = (med.get("_query_original") or "").strip()
-    if qorig:
-        consultas.append(qorig)
-    if complemento:
-        if complemento.get("principio_activo"):
-            consultas.append(complemento["principio_activo"])
+    # Priorizar el principio activo específico del medicamento para obtener
+    # precios correctos en farmacias (evita que todos los resultados de una
+    # búsqueda genérica compartan la misma oferta).
     if med.get("principio_activo_texto"):
         pa = med["principio_activo_texto"]
         # Solo el nombre INN sin dosis (texto antes del primer paréntesis).
@@ -214,6 +211,13 @@ def _consultas_farmacia_alternativas(med: dict, complemento: dict | None = None)
         inn_base = _extraer_inn_base(inn) if inn else ""
         if inn_base and inn_base.lower() != (inn or "").lower():
             consultas.append(inn_base)
+    if complemento:
+        if complemento.get("principio_activo"):
+            consultas.append(complemento["principio_activo"])
+    # La búsqueda original del usuario como alternativa de último recurso
+    qorig = (med.get("_query_original") or "").strip()
+    if qorig:
+        consultas.append(qorig)
     return [item for item in dict.fromkeys(valor.strip() for valor in consultas) if item][:3]
 
 

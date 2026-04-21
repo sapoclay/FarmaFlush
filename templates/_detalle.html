@@ -146,7 +146,7 @@
             {% endif %}
         {% endfor %}
 
-        {% if _gmin.val is not none %}
+        {% if _gmin.val is not none and _gmin.url is not none %}
             <p class="precio-oficial" style="font-size:1.15em; margin-bottom:0.75rem;">
                 El precio más bajo encontrado es de:
                 {% if _gmin.url %}

@@ -56,7 +56,7 @@
             {% endif %}
         {% endfor %}
 
-        {% if _gmin.val is not none %}
+        {% if _gmin.val is not none and _gmin.url is not none %}
             <p class="precio-oficial" style="text-align:right;">
                 El precio más bajo encontrado es de:
                 {% if _gmin.url %}
@@ -118,6 +118,12 @@
                     {% endif %}
                 {% endif %}
             {% endif %}
+        {% elif _gmin.val is not none %}
+            <p class="precio-oficial" style="text-align:right;">
+                Precio de referencia:
+                <strong>{{ "%.2f"|format(_gmin.val) }} €</strong>
+                <small>({{ _gmin.fuente }})</small>
+            </p>
         {% elif med.receta %}
             <p><small class="text-muted" title="{{ med.tipo_prescripcion }}">💊 Medicamento con receta · Consulta el precio en tu farmacia o en el <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do" target="_blank" rel="noopener">Nomenclátor del SNS</a></small></p>
         {% else %}

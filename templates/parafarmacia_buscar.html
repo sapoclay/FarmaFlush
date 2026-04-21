@@ -18,12 +18,19 @@
 
         <div class="search-row">
             <fieldset class="search-input-group">
-                <input type="search" name="q" value="{{ q|default('') }}"
+                <input type="search" id="search-input-para" name="q" value="{{ q|default('') }}"
                        placeholder="Busca cremas, vitaminas, champús…"
-                       autofocus autocomplete="off" required minlength="2">
+                       autocomplete="off" required minlength="2">
                 <button type="submit">Buscar</button>
             </fieldset>
         </div>
+
+        <script>
+        (function () {
+            var input = document.getElementById('search-input-para');
+            if (input) input.focus({ preventScroll: true });
+        })();
+        </script>
 
         <div class="search-meta-row">
             <label for="tam-para" class="search-meta-label">Resultados por página</label>
@@ -80,4 +87,13 @@
 <div id="resultados">
     {% include "_resultados_parafarmacia.html" %}
 </div>
+
+<p style="font-size:0.75rem;color:var(--pico-muted-color);margin:2rem auto 0;line-height:1.55;max-width:600px;border-top:1px solid var(--pico-muted-border-color);padding-top:0.75rem;text-align:center">
+    <strong>Aviso para titulares de farmacias:</strong>
+    FarmaFLUSH utiliza datos de acceso público para fomentar la transparencia de precios.
+    Si es usted titular de una farmacia indexada y desea que sus datos sean excluidos de futuras comparativas,
+    puede solicitar la baja abriendo una incidencia en nuestro repositorio oficial:
+    <a href="https://github.com/sapoclay/farmaflush/issues" target="_blank" rel="noopener">Solicitar exclusión vía GitHub Issues</a>.
+    <em>Se requiere una cuenta de GitHub para garantizar la trazabilidad de la solicitud.</em>
+</p>
 {% endblock %}
