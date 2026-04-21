@@ -53,10 +53,14 @@ El puente entre ambas capas es un enlace discreto al pie del resultado del verif
 | Fuentes principales | CIMA (AEMPS) REST API · Nomenclátor SNS (PVP oficial) · Vademécum · BIFIMED (Ministerio de Sanidad) |
 | Fuentes online | Dosfarma · Farmacia Tedin · Farmacias Direct · Castrofarma · Farmacia Barata · FarmaGalicia · OpenFarma · Farmacia Pontevea · Gomezulla |
 
-Exclusión voluntaria (Opt-out):
+### Exclusión voluntaria (Opt-out)
 
-Este proyecto respeta la voluntad de los comercios analizados. Aunque la aplicación utiliza datos públicos y accesibles por cualquier usuario en la web, ofrecemos a los titulares de las farmacias la posibilidad de ser eliminados del motor de búsqueda. Para solicitar la retirada de su catálogo de nuestra base de datos, dirígase a la sección **Aviso para titulares de farmacias**, situada al final de esta documentación.
----
+Este proyecto respeta la voluntad de los comercios analizados. 
+
+Aunque la aplicación utiliza datos públicos y accesibles por cualquier usuario en la web, ofrecemos a los titulares de las farmacias la posibilidad de ser eliminados del motor de búsqueda. 
+
+Para solicitar la retirada de su catálogo de nuestra base de datos, dirígase a la sección "**Aviso para titulares de farmacias**", situada al final de esta documentación.
+
 
 ## Configuración antes de usar
 
