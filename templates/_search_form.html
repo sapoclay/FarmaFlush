@@ -1,0 +1,96 @@
+<section class="search-section">
+            <form action="/buscar" method="get"
+                {% if use_htmx|default(false) %}hx-get="/buscar/progresivo" hx-target="#resultados" hx-indicator="#buscando"{% endif %}
+          aria-label="Buscar medicamentos" class="search-form"
+          onsubmit="(function(f){ var p=f.querySelector('#precio-mostrador'); if(p){ f._pm=p.value; setTimeout(function(){ p.value=''; },0); } })(this)">
+        {% if show_branding|default(false) %}
+        <div class="search-branding-block">
+            <img src="{{ url_for('media_img', filename='farmaflus100.png') }}" alt="FarmaFLUSH 100ml"
+                 class="hero-logo" width="320" height="140">
+            <p class="search-home-copy">Consulta precios de medicamentos en España.</p>
+        </div>
+        {% endif %}
+
+        <div class="search-row">
+            <fieldset class="search-input-group">
+                <input type="search" id="search-input" name="q" value="{{ q|default('') }}"
+                       placeholder="Busca Nolotil, Voltarén o Paracetamol…"
+                       autofocus autocomplete="off" required minlength="2">
+                <button type="submit">Buscar</button>
+            </fieldset>
+        </div>
+
+        <script>
+        (function () {
+            var terms = [
+                "Busca Nolotil, Voltarén o Paracetamol…",
+                "Busca Nasofaes, Rhodogil o Amoxicilina…",
+                "Busca Omeprazol, Eutirox o Ventolin…",
+                "Busca Dalsy, Fortasec o Ibuprofeno…",
+                "Busca Frenadol, Gelocatil o Enantyum…",
+                "Busca cremas, vitaminas o complementos…",
+                "Busca Augmentine, Lexatin o Adiro…",
+                "Busca Aerius, Clarityne o Loratadina…"
+            ];
+            var input = document.getElementById('search-input');
+            if (!input || input.value.trim() !== '') return;
+
+            var idx = Math.floor(Math.random() * terms.length);
+            input.placeholder = terms[idx];
+            var intervalId = setInterval(function () {
+                idx = (idx + 1) % terms.length;
+                input.placeholder = terms[idx];
+            }, 2800);
+
+            input.addEventListener('focus', function () { clearInterval(intervalId); });
+        })();
+        </script>
+
+
+        <div class="search-meta-row search-price-row">
+            <label for="precio-mostrador" class="search-meta-label" title="Introduce el precio que te cobran en tu farmacia para compararlo con los precios encontrados">
+                💶 ¿Cuánto te cobran en mostrador? <small>(opcional)</small>
+            </label>
+            <div class="search-price-input-group">
+                <input type="number" id="precio-mostrador" name="precio_mostrador"
+                       min="0" step="0.01" placeholder="ej. 12,50"
+                       value=""
+                       autocomplete="off">
+                <span class="search-price-currency">€</span>
+            </div>
+        </div>
+    </form>
+
+    <nav class="quick-filters" aria-label="Accesos rápidos">
+        <a href="/verificar-ticket"
+           class="quick-filter-btn"
+           title="Audita todas las líneas de tu ticket contra el PVP oficial del SNS">
+            🧾 Verificar ticket
+        </a>
+        <button type="button"
+                class="quick-filter-btn"
+                aria-expanded="false"
+                onclick="
+                    var panel = document.getElementById('mas-buscados-panel');
+                    var abierto = panel.classList.toggle('abierto');
+                    this.setAttribute('aria-expanded', abierto);
+                    if (abierto && !panel.dataset.cargado) {
+                        panel.dataset.cargado = '1';
+                        fetch('/mas-buscados', { headers: { 'HX-Request': 'true' } })
+                            .then(function(r){ return r.text(); })
+                            .then(function(html){ panel.innerHTML = html; })
+                            .catch(function(){ /* mantiene contenido por defecto */ });
+                    }
+                ">
+            🔥 Más buscados
+        </button>
+    </nav>
+
+    <div id="mas-buscados-panel" class="mas-buscados-panel" aria-label="Búsquedas populares">
+        <span class="text-muted" style="font-size:0.85rem">Cargando…</span>
+    </div>
+
+    {% if use_htmx|default(false) %}
+    <span id="buscando" class="htmx-indicator"><span class="spinner"></span> Buscando…</span>
+    {% endif %}
+</section>

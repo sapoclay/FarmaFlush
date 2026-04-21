@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Verificador de PVP Oficial — Ticket de farmacia — FarmaFLUSH{% endblock %}
+
+{% block content %}
+<main class="container" style="max-width:760px;padding-top:2rem">
+
+    <!-- Escudo Nomenclátor Oficial -->
+    <div style="text-align:center;margin-bottom:1.25rem">
+        <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do"
+           target="_blank" rel="noopener"
+           style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.45rem 1rem;border-radius:999px;border:1.5px solid #0d47a1;background:#e3f2fd;color:#0d47a1;text-decoration:none;font-size:0.8rem;font-weight:700">
+            🏛️ Nomenclátor oficial del Ministerio de Sanidad
+        </a>
+    </div>
+
+    <nav style="margin-bottom:1.25rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+        <a href="/" role="button" class="secondary outline" style="font-size:.85rem;padding:.3rem .75rem">← Inicio</a>
+        <a href="/verificar-precio" role="button" class="outline" style="font-size:.85rem;padding:.3rem .75rem">Verificar un solo producto</a>
+    </nav>
+
+    <h1 style="font-size:1.5rem;margin-bottom:.25rem">🏛️ Verificador de PVP Oficial · Ticket de farmacia</h1>
+    <p style="font-size:.95rem;margin-bottom:.4rem;font-weight:600">Lo que dice la ley vs. lo que te han cobrado</p>
+    <p style="opacity:.7;font-size:.9rem;margin-bottom:1.5rem">
+        Introduce los medicamentos de tu ticket y el precio cobrado.
+        Contrastamos cada línea contra el <strong>PVP máximo legalmente intervenido</strong>
+        registrado en el Nomenclátor oficial del SNS — el precio que establece la ley.
+    </p>
+
+    {# ── Formulario ──────────────────────────────────────────────── #}
+    <form id="ticket-form" method="post" action="/verificar-ticket"
+          hx-post="/verificar-ticket" hx-target="#ticket-resultado"
+          hx-indicator="#ticket-verificando" style="margin-bottom:1.5rem">
+
+        <div id="ticket-filas">
+            {# Filas de resultados anteriores (si hay POST devuelto) #}
+            {% if items %}
+                {% for item in items %}
+                <div class="ticket-fila" data-idx="{{ loop.index0 }}">
+                    <input type="text" name="q"
+                           placeholder="Medicamento (ej. ibuprofeno 600mg 20 comp.)"
+                           value="{{ item.q }}" required minlength="3"
+                           style="flex:1 1 auto;min-width:0">
+                    <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
+                        <input type="number" name="precio"
+                               placeholder="€" min="0" step="0.01"
+                               value="{{ '%.2f'|format(item.precio_cobrado) if item.precio_cobrado is not none else '' }}"
+                               style="width:90px">
+                        <span style="opacity:.5;font-size:.85rem">€</span>
+                        <button type="button" class="ticket-eliminar outline secondary"
+                                title="Eliminar fila" style="padding:.3rem .6rem;font-size:.9rem">✕</button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                {# Dos filas vacías por defecto #}
+                <div class="ticket-fila" data-idx="0">
+                    <input type="text" name="q"
+                           placeholder="Medicamento (ej. ibuprofeno 600mg 20 comp.)"
+                           required minlength="3"
+                           style="flex:1 1 auto;min-width:0">
+                    <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
+                        <input type="number" name="precio"
+                               placeholder="€" min="0" step="0.01"
+                               style="width:90px">
+                        <span style="opacity:.5;font-size:.85rem">€</span>
+                        <button type="button" class="ticket-eliminar outline secondary"
+                                title="Eliminar fila" style="padding:.3rem .6rem;font-size:.9rem">✕</button>
+                    </div>
+                </div>
+                <div class="ticket-fila" data-idx="1">
+                    <input type="text" name="q"
+                           placeholder="Medicamento (ej. paracetamol 1g 20 comp.)"
+                           style="flex:1 1 auto;min-width:0">
+                    <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
+                        <input type="number" name="precio"
+                               placeholder="€" min="0" step="0.01"
+                               style="width:90px">
+                        <span style="opacity:.5;font-size:.85rem">€</span>
+                        <button type="button" class="ticket-eliminar outline secondary"
+                                title="Eliminar fila" style="padding:.3rem .6rem;font-size:.9rem">✕</button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-top:.75rem">
+            <button type="button" id="ticket-add" class="outline"
+                    style="flex-shrink:0;padding:.4rem .9rem;font-size:.9rem">
+                + Añadir producto
+            </button>
+            <button type="submit" style="flex-shrink:0">
+                Verificar ticket
+            </button>
+            <span id="ticket-verificando" class="htmx-indicator" style="opacity:.6;font-size:.9rem">
+                Analizando…
+            </span>
+        </div>
+    </form>
+
+    {# ── Resultados ─────────────────────────────────────────────── #}
+    <div id="ticket-resultado">
+        {% if resumen %}
+            {% include "_ticket_resultado.html" %}
+        {% endif %}
+    </div>
+
+    <hr style="margin-top:2rem">
+    <div style="font-size:.78rem;color:var(--pico-muted-color);text-align:center;line-height:1.6;margin-top:.5rem">
+        <p style="margin:0 0 .35rem">
+            <strong>Esta herramienta no fomenta la compra de medicamentos.</strong>
+            Su único fin es informar al usuario sobre el PVP máximo regulado por el SNS
+            y contrastar si lo cobrado en farmacia se ajusta a lo que establece la ley.
+        </p>
+        <p style="margin:0;opacity:.7">
+            Datos extraídos del <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do" target="_blank" rel="noopener"><strong>Nomenclátor de Prestación Farmacéutica del SNS</strong></a>
+            (AEMPS / Ministerio de Sanidad). Solo los medicamentos con financiación pública tienen PVP máximo intervenido por ley.
+            Información orientativa. No constituye asesoramiento legal ni farmacéutico.
+        </p>
+    </div>
+</main>
+
+<style>
+    .ticket-fila {
+        display: flex;
+        gap: .5rem;
+        align-items: center;
+        margin-bottom: .5rem;
+        flex-wrap: wrap;
+    }
+</style>
+
+<script>
+(function () {
+    const filas = document.getElementById("ticket-filas");
+    let idx = filas.querySelectorAll(".ticket-fila").length;
+
+    // Añadir nueva fila
+    document.getElementById("ticket-add").addEventListener("click", function () {
+        const nueva = document.createElement("div");
+        nueva.className = "ticket-fila";
+        nueva.dataset.idx = idx;
+        nueva.innerHTML = `
+            <input type="text" name="q"
+                   placeholder="Medicamento"
+                   style="flex:1 1 auto;min-width:0">
+            <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">
+                <input type="number" name="precio"
+                       placeholder="€" min="0" step="0.01"
+                       style="width:90px">
+                <span style="opacity:.5;font-size:.85rem">€</span>
+                <button type="button" class="ticket-eliminar outline secondary"
+                        title="Eliminar fila" style="padding:.3rem .6rem;font-size:.9rem">✕</button>
+            </div>`;
+        filas.appendChild(nueva);
+        nueva.querySelector('input[name="q"]').focus();
+        idx++;
+        actualizarEliminar();
+    });
+
+    // Delegación: eliminar fila
+    filas.addEventListener("click", function (e) {
+        if (e.target.closest(".ticket-eliminar")) {
+            const fila = e.target.closest(".ticket-fila");
+            if (filas.querySelectorAll(".ticket-fila").length > 1) {
+                fila.remove();
+                actualizarEliminar();
+            }
+        }
+    });
+
+    function actualizarEliminar() {
+        const btns = filas.querySelectorAll(".ticket-eliminar");
+        btns.forEach(function (btn) {
+            btn.disabled = btns.length <= 1;
+        });
+    }
+
+    actualizarEliminar();
+})();
+</script>
+{% endblock %}

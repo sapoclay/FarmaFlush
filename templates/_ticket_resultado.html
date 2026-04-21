@@ -1,0 +1,165 @@
+{% if resumen %}
+{# ── Resumen ejecutivo ───────────────────────────────────────────── #}
+<article style="margin-bottom:1rem">
+    <header style="font-weight:600">Resultado de la auditoría · {{ resumen.total }} producto{{ 's' if resumen.total != 1 else '' }}</header>
+
+    {# Resumen tipo lista legible #}
+    <p style="margin:.5rem 0 .75rem;font-size:.95rem;line-height:1.8">
+        {% if resumen.ok > 0 %}
+            <span style="color:#065f46">✅ <strong>{{ resumen.ok }}</strong> precio{{ 's' if resumen.ok != 1 else '' }} correcto{{ 's' if resumen.ok != 1 else '' }}</span>
+        {% endif %}
+        {% if resumen.inferior > 0 %}
+            {% if resumen.ok > 0 %} · {% endif %}
+            <span style="color:#1e3a8a">ℹ️ <strong>{{ resumen.inferior }}</strong> inferior al oficial (posible copago)</span>
+        {% endif %}
+        {% if resumen.excesivos > 0 %}
+            {% if resumen.ok > 0 or resumen.inferior > 0 %} · {% endif %}
+            <span style="color:#7f1d1d">🚨 <strong>{{ resumen.excesivos }}</strong> con diferencia elevada respecto al PVP oficial</span>
+        {% endif %}
+        {% if resumen.alertas - resumen.excesivos > 0 %}
+            {% if resumen.ok > 0 or resumen.inferior > 0 or resumen.excesivos > 0 %} · {% endif %}
+            <span style="color:#7c2d12">⚠️ <strong>{{ resumen.alertas - resumen.excesivos }}</strong> superior al PVP oficial</span>
+        {% endif %}
+        {% if resumen.sin_datos > 0 %}
+            {% if resumen.ok > 0 or resumen.inferior > 0 or resumen.alertas > 0 %} · {% endif %}
+            <span style="opacity:.5">— <strong>{{ resumen.sin_datos }}</strong> sin datos en Nomenclátor</span>
+        {% endif %}
+    </p>
+
+    {# Ranking de impacto: worst offender #}
+    {% if resumen.peor_q %}
+    <div style="margin:.75rem 0 0;padding:.65rem 1rem;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+        <span style="font-size:1.3rem;line-height:1">📌</span>
+        <div style="flex:1;min-width:0">
+            <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:#92400e;margin-bottom:.1rem">Mayor diferencia del ticket</div>
+            <div style="font-weight:600;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1f2937">{{ resumen.peor_q }}</div>
+        </div>
+        <div style="text-align:right;white-space:nowrap">
+            <span style="font-size:1.15rem;font-weight:700;color:{% if resumen.peor_nivel == 'excesivo' %}#dc2626{% else %}#ea580c{% endif %}">
+                +{{ "%.2f"|format(resumen.peor_diff) }} €
+            </span>
+            <span style="font-size:.78rem;opacity:.6;margin-left:.25rem">({{ resumen.peor_pct }}%)</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Veredicto global #}
+    {% if resumen.excesivos > 0 %}
+    <p style="margin:.5rem 0 0;padding:.6rem .9rem;background:#fee2e2;border-left:3px solid #ef4444;border-radius:4px;font-size:.9rem;color:#7f1d1d">
+        � En <strong>{{ resumen.excesivos }} producto{{ 's' if resumen.excesivos > 1 else '' }}</strong>
+        podrías haber pagado de más — revisa los detalles abajo.
+    </p>
+    {% elif resumen.alertas > 0 %}
+    <p style="margin:.5rem 0 0;padding:.6rem .9rem;background:#fff7ed;border-left:3px solid #f97316;border-radius:4px;font-size:.9rem;color:#7c2d12">
+        ⚠️ <strong>{{ resumen.alertas }} producto{{ 's' if resumen.alertas > 1 else '' }}</strong>
+        con precio ligeramente superior al oficial. Puede deberse a formato o presentación distinta.
+    </p>
+    {% elif resumen.ok == resumen.total %}
+    <p style="margin:.5rem 0 0;padding:.6rem .9rem;background:#d1fae5;border-left:3px solid #10b981;border-radius:4px;font-size:.9rem;color:#064e3b">
+        ✅ Todo correcto — has pagado los precios que corresponden según el Nomenclátor SNS.
+    </p>
+    {% endif %}
+</article>
+
+{# ── Tabla de detalle ────────────────────────────────────────────── #}
+<div style="overflow-x:auto">
+<table style="font-size:.88rem;width:100%">
+    <thead>
+        <tr>
+            <th style="width:35%">Introducido</th>
+            <th>Encontrado en Nomenclátor</th>
+            <th style="text-align:right;white-space:nowrap">PVP oficial</th>
+            <th style="text-align:right;white-space:nowrap">Cobrado</th>
+            <th style="text-align:center">Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for item in items %}
+        {% set m = item.match %}
+        {% set d = item.diferencia %}
+        <tr>
+            {# Nombre introducido #}
+            <td style="opacity:.8;font-style:italic">{{ item.q }}</td>
+
+            {# Coincidencia #}
+            <td>
+                {% if m %}
+                    <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do?metodo=verDetalle&prod={{ m.cn }}"
+                       target="_blank" rel="noopener" style="font-size:.85rem">{{ m.nombre }}</a>
+                    <br>
+                    <span style="font-size:.75rem;opacity:.55">CN {{ m.cn }}
+                    {% if m.confianza == "probable" %} · ⚠️ confianza media{% endif %}
+                    {% if m.confianza == "debil" %} · ❓ confianza baja{% endif %}
+                    </span>
+                {% else %}
+                    <span style="opacity:.45;font-size:.85rem">No encontrado</span>
+                {% endif %}
+            </td>
+
+            {# PVP oficial #}
+            <td style="text-align:right;white-space:nowrap">
+                {% if m and m.pvp %}
+                    <strong>{{ "%.2f"|format(m.pvp) }} €</strong>
+                {% else %}
+                    <span style="opacity:.35">—</span>
+                {% endif %}
+            </td>
+
+            {# Precio cobrado #}
+            <td style="text-align:right;white-space:nowrap">
+                {% if item.precio_cobrado is not none %}
+                    {{ "%.2f"|format(item.precio_cobrado) }} €
+                {% else %}
+                    <span style="opacity:.35">—</span>
+                {% endif %}
+            </td>
+
+            {# Estado #}
+            <td style="text-align:center;white-space:nowrap">
+                {% if d %}
+                    {% if d.nivel == "ok" %}
+                        <span title="Precio correcto" style="color:#065f46">✅ Correcto</span>
+                    {% elif d.nivel == "inferior" %}
+                        <span title="Precio inferior al oficial (copago u otro descuento)" style="color:#1e3a8a">ℹ️ −{{ "%.2f"|format(d.diff|abs) }} €</span>
+                    {% elif d.nivel == "excesivo" %}
+                        <span title="Diferencia elevada respecto al PVP oficial" style="color:#7f1d1d">💸 +{{ "%.2f"|format(d.diff) }} €<br><small>{{ d.pct }}% de más</small></span>
+                    {% else %}
+                        <span title="Supera ligeramente el PVP oficial" style="color:#7c2d12">⚠️ +{{ "%.2f"|format(d.diff) }} €</span>
+                    {% endif %}
+                {% elif m and not item.precio_cobrado %}
+                    <span style="opacity:.4;font-size:.8rem">sin precio</span>
+                {% elif not m %}
+                    <span style="opacity:.4;font-size:.8rem">sin datos</span>
+                {% endif %}
+            </td>
+        </tr>
+
+        {# Explicación adicional para alertas #}
+        {% if d and d.nivel in ("excesivo", "superior") %}
+        <tr style="background:{% if d.nivel == 'excesivo' %}#fff8f8{% else %}#fffef0{% endif %}">
+            <td colspan="5" style="font-size:.8rem;opacity:.8;padding:.3rem .75rem .5rem">
+                {% if d.nivel == "excesivo" %}
+                � Te cobraron <strong>{{ "%.2f"|format(d.precio_cobrado) }} €</strong> — el PVP oficial es
+                <strong>{{ "%.2f"|format(d.pvp_oficial) }} €</strong>.
+                Podrías haber pagado hasta <strong>{{ "%.2f"|format(d.diff) }} € ({{ d.pct }}%)</strong> de más.
+                Comprueba CN, dosis y presentación con el ticket.
+                {% else %}
+                ⚠️ Te cobraron <strong>{{ "%.2f"|format(d.precio_cobrado) }} €</strong>:
+                <strong>{{ "%.2f"|format(d.diff) }} € por encima</strong> del PVP oficial
+                (<strong>{{ "%.2f"|format(d.pvp_oficial) }} €</strong>).
+                Puede deberse a presentación distinta — verifica el CN si tienes dudas.
+                {% endif %}
+            </td>
+        </tr>
+        {% endif %}
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<p style="font-size:.75rem;margin-top:1rem;padding:.65rem 1rem;border-radius:8px;border:1.5px solid #0d47a1;background:#e3f2fd;color:#0d47a1;text-align:center">
+    🏛️ <strong>Datos extraídos del Nomenclátor oficial del Ministerio de Sanidad (AEMPS)</strong> —
+    PVP máximo legalmente intervenido · Información orientativa; no constituye asesoramiento legal ni farmacéutico.
+</p>
+
+{% endif %}

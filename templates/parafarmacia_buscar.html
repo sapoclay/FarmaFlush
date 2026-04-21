@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Parafarmacia « {{ q }} » — Píldora 500mg{% endblock %}
+
+{% block content %}
+{% set use_htmx = true %}
+
+<section class="search-section">
+    <form action="/parafarmacia/buscar" method="get"
+          hx-get="/parafarmacia/buscar/progresivo" hx-target="#resultados" hx-indicator="#buscando"
+          aria-label="Buscar productos de parafarmacia" class="search-form">
+        <div class="search-branding-block">
+            <a href="/" style="text-decoration:none; color:inherit;">
+                <img src="{{ url_for('media_img', filename='farmaflusparafarmacia.png') }}" alt="FarmaFLUSH Parafarmacia"
+                     class="hero-logo" width="320" height="140">
+            </a>
+            <p class="search-home-copy">Busca productos de parafarmacia, cosmética e higiene en las farmacias online.</p>
+        </div>
+
+        <div class="search-row">
+            <fieldset class="search-input-group">
+                <input type="search" name="q" value="{{ q|default('') }}"
+                       placeholder="Busca cremas, vitaminas, champús…"
+                       autofocus autocomplete="off" required minlength="2">
+                <button type="submit">Buscar</button>
+            </fieldset>
+        </div>
+
+        <div class="search-meta-row">
+            <label for="tam-para" class="search-meta-label">Resultados por página</label>
+            <select id="tam-para" name="tam">
+                <option value="10" {% if tam_query|default('25') == "10" %}selected{% endif %}>10</option>
+                <option value="25" {% if tam_query|default('25') == "25" %}selected{% endif %}>25</option>
+                <option value="50" {% if tam_query|default('25') == "50" %}selected{% endif %}>50</option>
+                <option value="100" {% if tam_query|default('25') == "100" %}selected{% endif %}>100</option>
+            </select>
+        </div>
+
+    </form>
+
+    <nav class="quick-filters" aria-label="Accesos rápidos" style="margin-top:1.25rem;margin-bottom:1.5rem;">
+        <a href="/verificar-ticket"
+           class="quick-filter-btn"
+           title="Audita todas las líneas de tu ticket contra el PVP oficial del SNS">
+            🧾 Verificar ticket
+        </a>
+        <button type="button"
+                class="quick-filter-btn"
+                aria-expanded="false"
+                onclick="
+                    var panel = document.getElementById('mas-buscados-panel-para');
+                    var abierto = panel.classList.toggle('abierto');
+                    this.setAttribute('aria-expanded', abierto);
+                    if (abierto && !panel.dataset.cargado) {
+                        panel.dataset.cargado = '1';
+                        fetch('/mas-buscados/parafarmacia', { headers: { 'HX-Request': 'true' } })
+                            .then(function(r){ return r.text(); })
+                            .then(function(html){ panel.innerHTML = html; })
+                            .catch(function(){ /* mantiene contenido por defecto */ });
+                    }
+                ">
+            🔥 Más buscados
+        </button>
+    </nav>
+
+    <div id="mas-buscados-panel-para" class="mas-buscados-panel" aria-label="Búsquedas populares" style="margin-bottom:1.25rem;">
+        <span class="text-muted" style="font-size:0.85rem">Cargando…</span>
+    </div>
+
+<a href="/buscar{% if q %}?q={{ q|urlencode }}{% endif %}" class="verificar-cta-banner">
+    <span class="verificar-cta-emoji">💊</span>
+    <span class="verificar-cta-texto">
+        <strong>¿Buscas un medicamento?</strong>
+        <small>Consulta precios de medicamentos con financiación pública en el Nomenclátor SNS</small>
+    </span>
+    <span class="verificar-cta-arrow">→</span>
+</a>
+    <span id="buscando" class="htmx-indicator spinner" style="display:block; text-align:center; margin:0.5rem 0;"></span>
+</section>
+
+<div id="resultados">
+    {% include "_resultados_parafarmacia.html" %}
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% set use_htmx = true %}
+{% set show_branding = true %}
+{% include "_search_form.html" %}
+
+<a href="/verificar-precio" class="verificar-cta-banner">
+    <span class="verificar-cta-emoji">🏛️</span>
+    <span class="verificar-cta-texto">
+        <strong>Verificador de PVP Oficial — ¿Te cobran bien en la farmacia?</strong>
+        <small>Contrasta lo que te cobran contra el PVP máximo regulado por ley · Nomenclátor oficial del SNS</small>
+    </span>
+    <span class="verificar-cta-arrow">→</span>
+</a>
+
+<a href="/parafarmacia/buscar" class="verificar-cta-banner">
+    <span class="verificar-cta-emoji">💄</span>
+    <span class="verificar-cta-texto">
+        <strong>¿Buscas parafarmacia?</strong>
+        <small>Compara precios de cremas, vitaminas, higiene y cosmética en farmacias online</small>
+    </span>
+    <span class="verificar-cta-arrow">→</span>
+</a>
+
+<div id="resultados"></div>

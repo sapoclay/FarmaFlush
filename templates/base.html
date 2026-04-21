@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}FarmaFLUSH 100ml — Precios de medicamentos en España{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('media_img', filename='logo.png') }}">
+
+    <!-- Pico CSS — classless responsive framework (CDN) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+
+    <!-- Barra de progreso de navegación -->
+    <style>
+        #nav-progress-wrap {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        #nav-progress-wrap.activo {
+            opacity: 1;
+        }
+        #nav-progress-wrap.completo {
+            opacity: 0;
+            transition: opacity 0.4s ease 0.15s;
+        }
+        #nav-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--pico-primary);
+            transition: width 0.25s ease;
+            border-radius: 0 2px 2px 0;
+        }
+        #nav-progress-label {
+            position: fixed;
+            top: 7px;
+            right: 10px;
+            font-size: 0.7rem;
+            color: var(--pico-primary);
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            background: var(--pico-background-color);
+            padding: 2px 8px;
+            border-radius: 10px;
+            border: 1px solid var(--pico-primary);
+            line-height: 1.5;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+        #nav-progress-label .np-pct {
+            font-weight: 700;
+        }
+        #nav-progress-label .np-txt {
+            font-weight: 400;
+            opacity: 0.75;
+        }
+        #nav-progress-wrap.activo ~ #nav-progress-label,
+        #nav-progress-label.activo {
+            opacity: 1;
+        }
+    </style>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --pico-font-size: 16px;
+            --pico-box-shadow: 0 0 0 transparent;
+            --pico-group-box-shadow: 0 0 0 transparent;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        a,
+        a:hover,
+        a:focus,
+        a:focus-visible,
+        a:active,
+        a:visited {
+            text-decoration: none !important;
+        }
+        button:focus,
+        button:focus-visible,
+        input:focus,
+        input:focus-visible,
+        select:focus,
+        select:focus-visible,
+        a:focus,
+        a:focus-visible,
+        summary:focus,
+        summary:focus-visible,
+        [role="group"] > input:focus,
+        [role="group"] > input:focus-visible,
+        [role="group"] > select:focus,
+        [role="group"] > select:focus-visible,
+        [role="group"] > button:focus,
+        [role="group"] > button:focus-visible {
+            box-shadow: none !important;
+            -webkit-box-shadow: none !important;
+            outline: none !important;
+            border-color: var(--pico-form-element-border-color) !important;
+        }
+        .search-form *,
+        .search-form *:focus,
+        .search-form *:focus-visible,
+        .search-form *:active {
+            box-shadow: none !important;
+            -webkit-box-shadow: none !important;
+        }
+        .precio-oficial {
+            color: var(--pico-color-green-600, #2e7d32);
+            font-weight: bold;
+            font-size: 1.25rem;
+        }
+        .precio-medio {
+            color: var(--pico-color-orange-600, #e65100);
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .comparativa-mostrador {
+            font-size: 0.85rem;
+            margin: 0.35rem 0 0;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            line-height: 1.4;
+        }
+        .comparativa-sobreprecio {
+            background: #fff3e0;
+            color: #b71c1c;
+            border-left: 3px solid #ef9a9a;
+        }
+        .comparativa-buen-precio {
+            background: #e8f5e9;
+            color: #1b5e20;
+            border-left: 3px solid #a5d6a7;
+        }
+        .comparativa-precio-igual {
+            background: #e3f2fd;
+            color: #0d47a1;
+            border-left: 3px solid #90caf9;
+        }
+        .search-price-row {
+            align-self: stretch;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            row-gap: 0.4rem;
+        }
+        .search-price-input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .search-price-input-group input[type="number"] {
+            width: 110px;
+            min-width: 80px;
+            text-align: right;
+            margin: 0;
+        }
+        .search-price-currency {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.15em 0.5em;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-receta   { background: #ffcdd2; color: #b71c1c; }
+        .badge-libre     { background: #c8e6c9; color: #1b5e20; }
+        .badge-generico  { background: #bbdefb; color: #0d47a1; }
+        .badge-financiado   { background: #c8e6c9; color: #1b5e20; }
+        .badge-excluido     { background: #ffcdd2; color: #b71c1c; }
+        .badge-no-financiado { background: #fff3e0; color: #e65100; }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        .med-card {
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .med-card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+        .med-card img {
+            max-width: 80px;
+            height: auto;
+            float: right;
+            margin-left: 0.5rem;
+            border-radius: 4px;
+        }
+        .fuentes-table { font-size: 0.85rem; }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0.5rem 1rem;
+            margin-bottom: 1rem;
+        }
+        .info-grid p {
+            margin: 0;
+        }
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: inline-block; }
+        .spinner {
+            display: inline-block;
+            width: 1.5rem; height: 1.5rem;
+            border: 3px solid var(--pico-muted-border-color);
+            border-top-color: var(--pico-primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        header nav { padding: 0.5rem 0; }
+        header.container {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--pico-background-color);
+            min-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            transition: box-shadow 0.2s ease;
+        }
+        body.logo-compacto header.container {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 0.4rem var(--pico-spacing);
+            display: flex;
+            align-items: center;
+        }
+        .header-mini-logo {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: var(--pico-color);
+        }
+        .header-mini-logo img {
+            height: 36px;
+            width: auto;
+        }
+        body.logo-compacto .header-mini-logo {
+            display: flex;
+        }
+        /* Mini logo en el header cuando está compacto */
+        .header-mini-logo {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: var(--pico-color);
+        }
+        .header-mini-logo img {
+            height: 36px;
+            width: auto;
+        }
+        body.logo-compacto .header-mini-logo {
+            display: flex;
+        }
+        .header-nav-btns {
+            display: none;
+            gap: 0.5rem;
+            margin-left: auto;
+        }
+        body.logo-compacto .header-nav-btns {
+            display: flex;
+        }
+        .header-nav-btn {
+            font-size: 0.78rem;
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            border: 1px solid var(--pico-muted-border-color);
+            color: var(--pico-color);
+            white-space: nowrap;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .header-nav-btn:hover {
+            background: var(--pico-primary-background);
+            border-color: var(--pico-primary);
+            color: var(--pico-primary);
+        }
+        .hero-logo {
+            display: block;
+            width: min(320px, 80vw);
+            height: auto;
+            margin: 0 auto 1rem;
+            transition: width 0.35s ease, margin 0.35s ease, opacity 0.35s ease;
+        }
+        .search-branding-block {
+            display: block;
+            width: 100%;
+            text-align: center;
+            overflow: hidden;
+            max-height: 400px;
+            opacity: 1;
+            margin: 0;
+            transition: max-height 0.35s ease, opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+        }
+        /* Logo compacto: se activa al hacer scroll o al mostrar resultados */
+        .logo-compacto .search-branding-block {
+            max-height: 0 !important;
+            opacity: 0;
+            margin: 0;
+            padding: 0;
+            pointer-events: none;
+        }
+        .logo-compacto .hero-logo {
+            width: 0;
+            margin: 0;
+            opacity: 0;
+        }
+        .search-section {
+            max-width: 600px;
+            margin: 0 auto 1.5rem;
+        }
+        .search-form {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .search-row {
+            display: block;
+            width: 100%;
+        }
+        .search-form fieldset {
+            margin-bottom: 0;
+        }
+        .search-form [role="group"],
+        .search-form [role="search"],
+        .search-form [role="group"]:focus-within,
+        .search-form [role="search"]:focus-within {
+            box-shadow: none !important;
+            -webkit-box-shadow: none !important;
+            --pico-group-box-shadow: 0 0 0 transparent !important;
+            --pico-group-box-shadow-focus-with-button: 0 0 0 transparent !important;
+            --pico-group-box-shadow-focus-with-input: 0 0 0 transparent !important;
+        }
+        @supports selector(:has(*)) {
+            .search-form [role="group"]:has(input:focus, select:focus, button:focus),
+            .search-form [role="search"]:has(input:focus, select:focus, button:focus),
+            .search-form [role="group"]:has(input:focus-visible, select:focus-visible, button:focus-visible),
+            .search-form [role="search"]:has(input:focus-visible, select:focus-visible, button:focus-visible) {
+                box-shadow: none !important;
+                -webkit-box-shadow: none !important;
+                --pico-group-box-shadow: 0 0 0 transparent !important;
+                --pico-group-box-shadow-focus-with-button: 0 0 0 transparent !important;
+                --pico-group-box-shadow-focus-with-input: 0 0 0 transparent !important;
+            }
+        }
+        .search-input-group {
+            width: 100%;
+            display: flex;
+            align-items: stretch;
+            margin: 0;
+            box-shadow: none !important;
+            -webkit-box-shadow: none !important;
+            border: 0;
+            outline: none;
+        }
+        .search-input-group:focus-within,
+        .search-input-group:focus,
+        .search-input-group:active {
+            box-shadow: none !important;
+            -webkit-box-shadow: none !important;
+            border: 0 !important;
+            outline: none !important;
+        }
+        .search-home-copy {
+            text-align: center;
+            margin: 0.75rem 0 0;
+        }
+        .search-meta-row {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            align-self: flex-end;
+            gap: 0.75rem;
+            margin-top: 0;
+        }
+        .search-meta-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin: 0;
+            white-space: nowrap;
+        }
+        .search-meta-row select {
+            width: auto;
+            min-width: 140px;
+            max-width: 200px;
+            margin: 0;
+        }
+        .progress-shell {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            z-index: 1100;
+            background: rgba(0, 0, 0, 0.05);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .progress-shell.is-visible {
+            opacity: 1;
+        }
+        .progress-bar {
+            width: 35%;
+            height: 100%;
+            background: linear-gradient(90deg, #1f6feb, #4ea1ff);
+            border-radius: 0 999px 999px 0;
+            transform: translateX(-120%);
+        }
+        .progress-shell.is-visible .progress-bar {
+            animation: progress-slide 1.1s ease-in-out infinite;
+        }
+        .portal-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 2.75rem;
+            padding: 0.7rem 1.15rem;
+            border-radius: 999px;
+            background: var(--pico-primary);
+            color: var(--pico-primary-inverse);
+            text-decoration: none;
+            font-weight: 600;
+            border: 1px solid var(--pico-primary);
+            transition: transform 0.15s ease, opacity 0.15s ease;
+        }
+        .portal-button:hover,
+        .portal-button:focus-visible {
+            color: var(--pico-primary-inverse);
+            text-decoration: none;
+            opacity: 0.92;
+            transform: translateY(-1px);
+        }
+        .portal-button-secondary {
+            background: transparent;
+            color: var(--pico-primary);
+        }
+        .portal-button-secondary:hover,
+        .portal-button-secondary:focus-visible {
+            color: var(--pico-primary);
+        }
+        /* --- Verificador CTA banner (home) --- */
+        .verificar-cta-banner {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            max-width: 600px;
+            margin: 0 auto 1.75rem;
+            padding: 0.85rem 1.1rem;
+            border-radius: 10px;
+            border: 1.5px solid var(--pico-primary-border);
+            background: color-mix(in srgb, var(--pico-primary-background) 55%, transparent);
+            color: var(--pico-color);
+            text-decoration: none;
+            transition: border-color 0.15s, background 0.15s, transform 0.15s;
+        }
+        .verificar-cta-banner:hover {
+            border-color: var(--pico-primary);
+            background: color-mix(in srgb, var(--pico-primary-background) 75%, transparent);
+            transform: translateY(-1px);
+            color: var(--pico-color);
+        }
+        .verificar-cta-emoji { font-size: 1.6rem; flex-shrink: 0; }
+        .verificar-cta-texto {
+            display: flex;
+            flex-direction: column;
+            gap: .1rem;
+            flex: 1;
+        }
+        .verificar-cta-texto strong { font-size: 1rem; }
+        .verificar-cta-texto small { opacity: .65; font-size: .82rem; }
+        .verificar-cta-arrow { font-size: 1.2rem; opacity: .5; flex-shrink: 0; }
+        /* confianza badge */
+        .confianza-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            font-size: .78rem;
+            font-weight: 700;
+            letter-spacing: .04em;
+            padding: .25rem .65rem;
+            border-radius: 999px;
+        }
+        .confianza-alta  { background: #d1fae5; color: #065f46; }
+        .confianza-media { background: #fef9c3; color: #854d0e; }
+        .confianza-baja  { background: #fee2e2; color: #991b1b; }
+        /* veredicto */
+        .veredicto {
+            margin: .5rem 0;
+            padding: .6rem .85rem;
+            border-radius: 6px;
+            border-left: 4px solid;
+        }
+        .veredicto-ok      { background:#d1fae5; border-color:#10b981; color:#064e3b; }
+        .veredicto-inferior{ background:#eff6ff; border-color:#3b82f6; color:#1e3a8a; }
+        .veredicto-alerta  { background:#fee2e2; border-color:#ef4444; color:#7f1d1d; }
+        .veredicto-aviso   { background:#fff7ed; border-color:#f97316; color:#7c2d12; }
+        /* candidatos */
+        .candidato-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: .25rem;
+            padding: .55rem .75rem;
+            border: 1px solid var(--pico-muted-border-color, #e5e7eb);
+            border-radius: 6px;
+            text-decoration: none;
+            color: inherit;
+            background: var(--pico-background-color, #fff);
+            transition: background .15s, border-color .15s;
+        }
+        .candidato-item:hover { background: var(--pico-primary-background, #eff6ff); border-color: var(--pico-primary-border); }
+        .candidato-item--probable { border-color: var(--pico-primary-border); background: var(--pico-primary-background, #eff6ff); }
+        .candidato-nombre { font-weight: 500; font-size: .92rem; }
+        .candidato-meta   { font-size: .78rem; opacity: .65; }
+        .candidato-sugerido {
+            display: inline-block;
+            margin-left: .4rem;
+            padding: .05rem .4rem;
+            border-radius: 999px;
+            font-size: .72rem;
+            font-weight: 700;
+            background: var(--pico-primary, #2563eb);
+            color: #fff;
+            opacity: 1;
+        }
+        /* --- fin verificador --- */
+        .detail-back-button {
+            margin-bottom: 1rem;
+        }
+        .med-card-actions {
+            margin: 0.75rem 0 0;
+        }
+        .external-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin: 1rem 0 0;
+        }
+        .external-description {
+            line-height: 1.65;
+        }
+        .external-description p:last-child {
+            margin-bottom: 0;
+        }
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 0.75rem 0 0;
+        }
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            background: var(--pico-muted-border-color);
+            font-size: 0.85rem;
+        }
+        /* --- Píldoras de filtro rápido --- */
+        .quick-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            margin-top: 0.75rem;
+            justify-content: center;
+        }
+        .quick-filter-btn {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 0.3rem !important;
+            padding: 0.3rem 0.85rem !important;
+            border-radius: 999px !important;
+            border: 1px solid var(--pico-primary) !important;
+            background: var(--pico-primary) !important;
+            color: #fff !important;
+            font-size: 0.85rem !important;
+            font-family: inherit !important;
+            font-weight: normal !important;
+            line-height: 1.5 !important;
+            letter-spacing: normal !important;
+            text-transform: none !important;
+            text-decoration: none !important;
+            white-space: nowrap !important;
+            cursor: pointer !important;
+            transition: background 0.15s, border-color 0.15s !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            width: auto !important;
+            vertical-align: middle !important;
+        }
+        .quick-filter-btn:hover {
+            background: var(--pico-primary-hover) !important;
+            border-color: var(--pico-primary-hover) !important;
+            color: #fff !important;
+        }
+        .mas-buscados-panel {
+            display: none;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+        .mas-buscados-panel.abierto { display: flex; }
+        .mas-buscados-panel a {
+            display: inline-block;
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            background: var(--pico-muted-border-color);
+            color: var(--pico-color);
+            font-size: 0.82rem;
+            text-decoration: none;
+        }
+        .mas-buscados-panel a:hover {
+            background: var(--pico-primary);
+            color: #fff;
+        }
+        /* --- fin filtro rápido --- */
+        .detail-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+            gap: 1.25rem;
+            align-items: start;
+        }
+        .detail-column > section,
+        .detail-sidebar > section {
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            background: color-mix(in srgb, var(--pico-background-color) 92%, white 8%);
+        }
+        .detail-column,
+        .detail-sidebar {
+            display: grid;
+            gap: 1rem;
+        }
+        .source-list {
+            display: grid;
+            gap: 0.75rem;
+        }
+        .source-card {
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: 10px;
+            padding: 0.85rem;
+        }
+        .source-card p:last-child {
+            margin-bottom: 0;
+        }
+        .comparar-table td, .comparar-table th {
+            vertical-align: middle;
+        }
+        .comparar-table .oferta-minprecio {
+            background-color: color-mix(in srgb, var(--pico-primary) 8%, transparent);
+        }
+        .comparar-table .oferta-minprecio td:nth-child(2) strong {
+            color: var(--pico-primary);
+        }
+        .kpi-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1.1;
+            margin: 0.25rem 0 0;
+        }
+        .detail-muted {
+            color: var(--pico-muted-color);
+        }
+        .detail-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .detail-badges .badge {
+            font-size: 0.78rem;
+        }
+        .paginacion {
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.85rem;
+            flex-wrap: wrap;
+        }
+        .paginacion-form {
+            margin: 0;
+        }
+        .paginacion-form input {
+            display: none;
+        }
+        .paginacion-estado {
+            min-width: 5rem;
+            text-align: center;
+            font-weight: 600;
+        }
+        .scroll-top-btn {
+            position: fixed;
+            right: 1rem;
+            bottom: 1rem;
+            z-index: 1000;
+            border: 0;
+            border-radius: 999px;
+            padding: 0.75rem 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(12px);
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+        }
+        .scroll-top-btn.is-visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        @media (max-width: 640px) {
+            .detail-layout {
+                grid-template-columns: 1fr;
+            }
+            .search-section {
+                margin-bottom: 1.25rem;
+            }
+            .search-meta-row {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            .search-meta-row select {
+                width: auto;
+            }
+        }
+        @keyframes progress-slide {
+            0% {
+                transform: translateX(-120%);
+            }
+            100% {
+                transform: translateX(320%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="global-progress" class="progress-shell" aria-hidden="true">
+        <div class="progress-bar"></div>
+    </div>
+
+    <header class="container">
+        <a href="/" class="header-mini-logo" aria-label="Inicio">
+            {% if request.path.startswith('/parafarmacia') %}
+            <img src="{{ url_for('media_img', filename='farmaflusparafarmacia.png') }}" alt="Parafarmacia">
+            {% elif request.path.startswith('/buscar') or request.path.startswith('/detalle') or request.path.startswith('/verificar') %}
+            <img src="{{ url_for('media_img', filename='farmaflus100.png') }}" alt="Medicamentos">
+            {% else %}
+            <img src="{{ url_for('media_img', filename='logo.png') }}" alt="Inicio">
+            {% endif %}
+        </a>
+        <nav class="header-nav-btns" aria-label="Cambiar sección">
+            <a href="/buscar" class="header-nav-btn verificar-cta-banner">💊 Medicamentos</a>
+            <a href="/parafarmacia/buscar" class="header-nav-btn verificar-cta-banner">💄 Parafarmacia</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="container">
+        <div style="max-width:760px;margin:0 auto;padding:1.25rem 0 0.5rem;display:flex;flex-direction:column;gap:0.9rem;align-items:center;text-align:center">
+
+            <!-- Escudo Nomenclátor Oficial -->
+            <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do"
+               target="_blank" rel="noopener"
+               style="display:inline-flex;align-items:center;gap:0.55rem;padding:0.5rem 1rem;border-radius:999px;border:1.5px solid #0d47a1;background:#e3f2fd;color:#0d47a1;text-decoration:none;font-size:0.82rem;font-weight:700;letter-spacing:0.02em">
+                🏛️ Datos extraídos del Nomenclátor oficial del Ministerio de Sanidad
+            </a>
+
+            <!-- Aviso legal omnipresente -->
+            <p style="font-size:0.78rem;color:var(--pico-muted-color);margin:0;line-height:1.55;max-width:640px">
+                <strong>Esta herramienta no fomenta la compra de medicamentos.</strong>
+                Su único fin es informar al usuario sobre el <strong>PVP máximo regulado por el Sistema Nacional de Salud</strong>
+                y contrastar si lo cobrado en farmacia se ajusta a lo que establece la ley.
+                Información orientativa. No constituye asesoramiento legal ni farmacéutico.
+            </p>
+
+            <small style="opacity:0.55">
+                <a href="/buscar">Medicamentos</a> &middot;
+                <a href="/parafarmacia/buscar">Parafarmacia</a> &middot;
+                <a href="/fuentes">Fuentes consultadas</a> &middot;
+                <a href="/verificar-precio">Verificador de PVP Oficial</a> &middot;
+                <a href="/verificar-ticket">🧾 Verificar ticket</a>
+            </small>
+
+            <small style="opacity:0.55">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 5px;"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>Este proyecto es Open Source. Ver código en <a href="https://github.com/sapoclay/farmaflush" target="_blank" rel="noopener">GitHub</a>
+            </small>
+        </div>
+    </footer>
+
+    <button id="scroll-top-btn" class="scroll-top-btn" type="button" aria-label="Subir arriba">
+        Subir arriba
+    </button>
+
+    <script>
+        (function () {
+            const scrollButton = document.getElementById("scroll-top-btn");
+            const progressBar = document.getElementById("global-progress");
+            let shouldScrollToTopAfterSwap = false;
+
+            const showProgressBar = () => {
+                if (progressBar) {
+                    progressBar.classList.add("is-visible");
+                }
+            };
+
+            const hideProgressBar = () => {
+                if (progressBar) {
+                    progressBar.classList.remove("is-visible");
+                }
+            };
+
+            if (!scrollButton) {
+                return;
+            }
+
+            const syncScrollButton = () => {
+                const shouldShow = window.scrollY > 160;
+                scrollButton.classList.toggle("is-visible", shouldShow);
+            };
+
+            scrollButton.addEventListener("click", () => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+
+            document.body.addEventListener("htmx:beforeRequest", (event) => {
+                const trigger = event.detail.elt;
+                shouldScrollToTopAfterSwap = Boolean(
+                    trigger && trigger.closest(".paginacion-form")
+                );
+                showProgressBar();
+            });
+
+            document.body.addEventListener("htmx:afterSwap", (event) => {
+                const target = event.detail.target;
+                if (!shouldScrollToTopAfterSwap || !target || target.id !== "resultados") {
+                    return;
+                }
+
+                shouldScrollToTopAfterSwap = false;
+                window.requestAnimationFrame(() => {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                });
+            });
+
+            document.body.addEventListener("htmx:afterRequest", hideProgressBar);
+            document.body.addEventListener("htmx:responseError", hideProgressBar);
+            document.body.addEventListener("htmx:sendError", hideProgressBar);
+
+            window.addEventListener("scroll", syncScrollButton, { passive: true });
+            syncScrollButton();
+        }());
+
+        /* --- Logo compacto al hacer scroll --- */
+        (function () {
+            var UMBRAL = 80; // px de scroll para compactar
+            var tieneHeroLogo = !!document.querySelector('.hero-logo');
+
+            function actualizarLogo() {
+                if (!tieneHeroLogo) {
+                    // Páginas sin logo hero (detalle, resultados sin branding…): siempre compacto
+                    document.body.classList.add('logo-compacto');
+                    return;
+                }
+                var scrollY = window.scrollY || window.pageYOffset;
+                if (scrollY > UMBRAL) {
+                    document.body.classList.add('logo-compacto');
+                } else {
+                    document.body.classList.remove('logo-compacto');
+                }
+            }
+
+            window.addEventListener('scroll', actualizarLogo, { passive: true });
+
+            actualizarLogo();
+        }());
+    </script>
+    <div id="nav-progress-wrap"><div id="nav-progress-bar"></div></div>
+    <div id="nav-progress-label"><span class="np-pct">0%</span><span class="np-txt"></span></div>
+    <script>
+    (function () {
+        var wrap  = document.getElementById('nav-progress-wrap');
+        var bar   = document.getElementById('nav-progress-bar');
+        var label = document.getElementById('nav-progress-label');
+        var elPct = label.querySelector('.np-pct');
+        var elTxt = label.querySelector('.np-txt');
+        var timer = null;
+
+        var STEPS = [
+            { target: 10,  delay: 80,   texto: 'Iniciando...' },
+            { target: 25,  delay: 250,  texto: 'Consultando fuentes...' },
+            { target: 42,  delay: 500,  texto: 'Buscando medicamentos...' },
+            { target: 58,  delay: 600,  texto: 'Procesando resultados...' },
+            { target: 70,  delay: 500,  texto: 'Cruzando con el Nomenclátor...' },
+            { target: 80,  delay: 600,  texto: 'Preparando la página...' },
+            { target: 88,  delay: 700,  texto: 'Casi listo...' },
+            { target: 93,  delay: 900,  texto: 'Cargando...' },
+        ];
+
+        function setPct(p, txt) {
+            bar.style.width = p + '%';
+            elPct.textContent = Math.round(p) + '%';
+            if (txt !== undefined) elTxt.textContent = txt ? ('· ' + txt) : '';
+        }
+
+        // true cuando la barra fue lanzada por un submit HTMX (no navegación real)
+        var htmxEnMarcha = false;
+
+        function iniciar(esHtmx) {
+            clearTimeout(timer);
+            htmxEnMarcha = Boolean(esHtmx);
+            setPct(0, '');
+            wrap.classList.remove('completo');
+            wrap.classList.add('activo');
+            label.classList.add('activo');
+            // Solo marcamos sessionStorage en navegaciones reales (no HTMX)
+            if (!esHtmx) {
+                try { sessionStorage.setItem('ff_nav', '1'); } catch(e) {}
+            }
+
+            var i = 0;
+            function siguiente() {
+                if (i >= STEPS.length) return;
+                var step = STEPS[i++];
+                timer = setTimeout(function () {
+                    setPct(step.target, step.texto);
+                    siguiente();
+                }, step.delay);
+            }
+            siguiente();
+        }
+
+        function completar() {
+            clearTimeout(timer);
+            htmxEnMarcha = false;
+            setPct(100, '¡Listo!');
+            setTimeout(function () {
+                wrap.classList.add('completo');
+                wrap.classList.remove('activo');
+                label.classList.remove('activo');
+            }, 400);
+        }
+
+        // Al cargar la nueva página: si venimos de una navegación real iniciada, flash 100%
+        (function checkNavFlash() {
+            try {
+                if (sessionStorage.getItem('ff_nav')) {
+                    sessionStorage.removeItem('ff_nav');
+                    setPct(100, '¡Listo!');
+                    wrap.classList.add('activo');
+                    label.classList.add('activo');
+                    setTimeout(function () {
+                        wrap.classList.add('completo');
+                        wrap.classList.remove('activo');
+                        label.classList.remove('activo');
+                    }, 500);
+                }
+            } catch(e) {}
+        }());
+
+        // Completar cuando el servidor confirma que la búsqueda terminó (evento personalizado)
+        document.addEventListener('ff:cargaCompleta', function () {
+            if (htmxEnMarcha) completar();
+        });
+        // Completar también en error de red
+        document.body.addEventListener('htmx:responseError', function () {
+            if (htmxEnMarcha) completar();
+        });
+        document.body.addEventListener('htmx:sendError', function () {
+            if (htmxEnMarcha) completar();
+        });
+
+        // Activar en clicks sobre banners y quick-filters de sección
+        document.addEventListener('click', function (e) {
+            var enlace = e.target.closest('a.verificar-cta-banner, a.header-nav-btn, a.quick-filter-btn');
+            if (!enlace) return;
+            var href = enlace.getAttribute('href') || '';
+            if (!href || href.startsWith('#')) return;
+            if (enlace.hasAttribute('hx-get')) {
+                // Petición HTMX (sin cambio de página)
+                iniciar(true);
+            } else {
+                // Navegación real (nueva página)
+                iniciar(false);
+            }
+        });
+
+        // Activar en submit de formularios de búsqueda (petición HTMX, sin cambio de página)
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (form && form.classList.contains('search-form')) {
+                iniciar(true);
+            }
+        });
+    }());
+    </script>
+</body>
+</html>

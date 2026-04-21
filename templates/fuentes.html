@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Fuentes consultadas — Pildora500mg{% endblock %}
+
+{% block content %}
+<section class="search-section">
+    <header class="search-branding-block">
+        <img src="{{ url_for('media_img', filename='logo.png') }}" alt="Pildora500mg" class="hero-logo">
+        <h1 style="margin-bottom:0.5rem;">Fuentes consultadas</h1>
+        <p style="margin-bottom:0;">Estas son las fuentes utilizadas actualmente por la aplicación para mostrar información, precios y comparativas de medicamentos y parafarmacia.</p>
+    </header>
+</section>
+
+{% set oficiales = fuentes | selectattr('tipo', 'in', ['API REST pública', 'Base oficial del SNS', 'Fuente complementaria']) | list %}
+{% set farmacias = fuentes | selectattr('tipo', 'equalto', 'Farmacia online') | list %}
+{% set farmacias_galicia = fuentes | selectattr('tipo', 'equalto', 'Farmacia online (Galicia)') | list %}
+{% set farmacias_todas = farmacias + farmacias_galicia %}
+
+<section style="max-width:900px; margin:0 auto 2rem;">
+
+    <h2 style="font-size:1.15rem; margin-bottom:1rem; border-bottom:1px solid var(--pico-muted-border-color); padding-bottom:0.4rem;">
+        Fuentes oficiales y bases de datos
+    </h2>
+    <div class="card-grid" aria-label="Fuentes oficiales">
+        {% for fuente in oficiales %}
+        <article class="med-card">
+            <h3 style="font-size:1.05rem; margin-bottom:0.3rem;">{{ fuente.nombre }}</h3>
+            <p style="margin:0 0 0.4rem;"><small><strong>{{ fuente.tipo }}</strong></small></p>
+            <p style="margin:0 0 0.75rem; font-size:0.9rem;">{{ fuente.descripcion }}</p>
+            <a href="{{ fuente.url }}" target="_blank" rel="noopener" class="portal-button" style="font-size:0.85rem;">Abrir fuente ↗</a>
+        </article>
+        {% endfor %}
+    </div>
+
+    <h2 style="font-size:1.15rem; margin:2rem 0 1rem; border-bottom:1px solid var(--pico-muted-border-color); padding-bottom:0.4rem;">
+        Farmacias online (comparativa de precios)
+    </h2>
+    <div class="card-grid" aria-label="Farmacias online">
+        {% for fuente in farmacias_todas %}
+        <article class="med-card">
+            <h3 style="font-size:1.05rem; margin-bottom:0.3rem;">{{ fuente.nombre }}</h3>
+            <p style="margin:0 0 0.4rem;"><small><strong>{{ fuente.tipo }}</strong></small></p>
+            <p style="margin:0 0 0.5rem; font-size:0.9rem;">{{ fuente.descripcion }}</p>
+            {% if fuente.envio %}
+            <p style="margin:0 0 0.75rem; font-size:0.85rem;">
+                🚚
+                {% if fuente.envio.coste_envio is not none %}
+                    Envío <strong>{{ "%.2f"|format(fuente.envio.coste_envio) }} €</strong>
+                    {%- if fuente.envio.coste_envio_texto %} ({{ fuente.envio.coste_envio_texto }}){% endif %} ·
+                {% endif %}
+                {% if fuente.envio.envio_gratis_desde is not none %}
+                    Gratis desde <strong>{{ fuente.envio.envio_gratis_desde|int }} €</strong>
+                {% endif %}
+                {% if fuente.envio.plazo_entrega %}
+                    · {{ fuente.envio.plazo_entrega }}
+                {% endif %}
+            </p>
+            {% endif %}
+            <a href="{{ fuente.url }}" target="_blank" rel="noopener" class="portal-button" style="font-size:0.85rem;">Visitar farmacia ↗</a>
+        </article>
+        {% endfor %}
+    </div>
+
+</section>
+{% endblock %}

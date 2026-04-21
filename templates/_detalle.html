@@ -1,0 +1,317 @@
+{% if med %}
+<article>
+    <a href="/" hx-get="/" hx-target="main" hx-push-url="true" class="portal-button detail-back-button">← Volver</a>
+
+    {% if med.situacion_financiacion %}
+    <p style="margin:0.5rem 0 1rem; font-size:0.78rem; color:var(--pico-muted-color);">
+        Situación de financiación según
+        <a href="https://www.sanidad.gob.es/profesionales/medicamentos.do?metodo=buscarMedicamentos" target="_blank" rel="noopener">BIFIMED</a>
+        (Ministerio de Sanidad):
+        <span class="badge badge-financiado" style="font-size:0.72rem;">Financiado SNS</span> el SNS lo cubre total o parcialmente ·
+        <span class="badge badge-no-financiado" style="font-size:0.72rem;">No financiado</span> no incluido en el SNS ·
+        <span class="badge badge-excluido" style="font-size:0.72rem;">Excluido</span> explícitamente retirado de la financiación
+    </p>
+    {% endif %}
+
+    <header style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap;">
+        {% if med.imagen_url %}
+        <img src="{{ med.imagen_url }}" alt="{{ med.nombre }}" style="max-width:120px; border-radius:6px;">
+        {% endif %}
+        <div>
+            <h2 style="margin-bottom:0.25rem;">{{ med.nombre }}</h2>
+            <p style="margin:0;">{{ med.laboratorio }} · {{ med.forma }} · {{ med.dosis }}</p>
+            <p style="margin:0.25rem 0;">
+                {% if med.receta %}
+                    <span class="badge badge-receta">Con receta</span>
+                {% else %}
+                    <span class="badge badge-libre">Sin receta</span>
+                {% endif %}
+                {% if med.generico and 'EFG' in med.nombre|upper %}
+                    <span class="badge badge-generico" title="Especialidad Farmacéutica Genérica">Genérico</span>
+                {% endif %}
+                {% if med.situacion_financiacion %}
+                    {% if med.situacion_financiacion in ("Sí", "Sí para determinadas indicaciones/condiciones") %}
+                        <span class="badge badge-financiado" title="Situación de financiación (BIFIMED): {{ med.situacion_financiacion }}">Financiado SNS</span>
+                    {% elif med.situacion_financiacion in ("Excluido", "No financiado por resolución") %}
+                        <span class="badge badge-excluido" title="Situación de financiación (BIFIMED): {{ med.situacion_financiacion }}">{{ med.situacion_financiacion }}</span>
+                    {% else %}
+                        <span class="badge badge-no-financiado" title="Situación de financiación (BIFIMED): {{ med.situacion_financiacion }}">No financiado</span>
+                    {% endif %}
+                {% endif %}
+            </p>
+            {% if med.confianza_busqueda %}
+            <p style="margin:0.4rem 0 0;">
+                {% if med.confianza_busqueda == "seguro" %}
+                <span class="confianza-badge confianza-alta" title="El sistema identificó este medicamento con alta certeza a partir de tu búsqueda">
+                    ✅ Coincidencia segura
+                </span>
+                {% elif med.confianza_busqueda == "probable" %}
+                <span class="confianza-badge confianza-media" title="El sistema identificó este medicamento con certeza media — verifica que sea el correcto">
+                    ⚠️ Coincidencia probable
+                </span>
+                {% else %}
+                <span class="confianza-badge confianza-baja" title="La identificación es débil — confirma que este sea el medicamento correcto">
+                    ❌ Coincidencia débil
+                </span>
+                {% endif %}
+            </p>
+            {% endif %}
+        </div>
+    </header>
+
+    <section>
+        <h3>Información del medicamento</h3>
+        <div class="info-grid">
+            {% if med.principio_activo_texto %}
+            <p><strong>Principio activo:</strong> {{ med.principio_activo_texto }}</p>
+            {% endif %}
+            {% if med.forma %}
+            <p><strong>Formato:</strong> {{ med.forma }}</p>
+            {% endif %}
+            {% if med.forma_simplificada and med.forma_simplificada != med.forma %}
+            <p><strong>Forma simplificada:</strong> {{ med.forma_simplificada }}</p>
+            {% endif %}
+            {% if med.dosis %}
+            <p><strong>Dosis:</strong> {{ med.dosis }}</p>
+            {% endif %}
+            {% if med.vias_administracion_texto %}
+            <p><strong>Vía de administración:</strong> {{ med.vias_administracion_texto }}</p>
+            {% endif %}
+            {% if med.tipo_prescripcion %}
+            <p><strong>Tipo de prescripción:</strong> {{ med.tipo_prescripcion }}</p>
+            {% endif %}
+            {% if med.grupo_terapeutico %}
+            <p><strong>Grupo terapéutico:</strong> {{ med.grupo_terapeutico }}</p>
+            {% endif %}
+            {% if med.laboratorio %}
+            <p><strong>Laboratorio titular:</strong> {{ med.laboratorio }}</p>
+            {% endif %}
+            {% if med.laboratorio_comercializador and med.laboratorio_comercializador != med.laboratorio %}
+            <p><strong>Laboratorio comercializador:</strong> {{ med.laboratorio_comercializador }}</p>
+            {% endif %}
+            <p><strong>Estado comercial:</strong> {{ "Comercializado" if med.comercializado else "No comercializado" }}</p>
+            {% if med.nregistro %}
+            <p><strong>Número de registro:</strong> {{ med.nregistro }}</p>
+            {% endif %}
+        </div>
+
+        {% if med.presentaciones %}
+        <details>
+            <summary>Ver presentaciones ({{ med.presentaciones|length }})</summary>
+            <table class="fuentes-table" role="grid">
+                <thead>
+                    <tr><th>Presentación</th><th>CN</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                {% for presentacion in med.presentaciones %}
+                    <tr>
+                        <td>{{ presentacion.nombre }}</td>
+                        <td>{{ presentacion.cn or "—" }}</td>
+                        <td>
+                            {% if presentacion.comercializado %}
+                                Comercializado
+                            {% elif presentacion.envase_clinico %}
+                                Envase clínico
+                            {% else %}
+                                No comercializado
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </details>
+        {% endif %}
+    </section>
+
+    <section>
+        <h3>Precio</h3>
+
+        {# Calcular precio mínimo global entre todas las fuentes #}
+        {% set _gmin = namespace(val=none, fuente="", url=none) %}
+        {% if med.precio_oficial is not none %}
+            {% set _vad = med.fuentes_precio | selectattr("fuente", "eq", "vademecum") | list %}
+            {% set _gmin.val = med.precio_oficial %}
+            {% set _gmin.fuente = "Vademécum" if _vad else "SNS" %}
+        {% endif %}
+        {% if med.precio_medio is not none and (_gmin.val is none or med.precio_medio < _gmin.val) %}
+            {% set _gmin.val = med.precio_medio %}
+            {% set _gmin.fuente = "precio medio" %}
+        {% endif %}
+        {% for _o in (med.ofertas_farmacia or []) %}
+            {% if _o.precio is not none and (_gmin.val is none or _o.precio < _gmin.val) %}
+                {% set _gmin.val = _o.precio %}
+                {% set _gmin.fuente = _o.nombre_fuente %}
+                {% set _gmin.url = _o.url %}
+            {% endif %}
+        {% endfor %}
+
+        {% if _gmin.val is not none %}
+            <p class="precio-oficial" style="font-size:1.15em; margin-bottom:0.75rem;">
+                El precio más bajo encontrado es de:
+                {% if _gmin.url %}
+                    <strong><a href="{{ _gmin.url }}" target="_blank" rel="noopener noreferrer" style="color:inherit;">{{ "%.2f"|format(_gmin.val) }} €</a></strong>
+                {% else %}
+                    <strong>{{ "%.2f"|format(_gmin.val) }} €</strong>
+                {% endif %}
+                <small>({{ _gmin.fuente }})</small>
+            </p>
+        {% elif med.receta %}
+            <p title="{{ med.tipo_prescripcion }}">💊 Medicamento con receta · Consulta el precio en tu farmacia o en el <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do" target="_blank" rel="noopener">Nomenclátor del SNS</a>.</p>
+        {% else %}
+            <p>Precio no disponible en las fuentes consultadas.</p>
+        {% endif %}
+
+        {# Tabla de todos los precios encontrados en todas las fuentes #}
+        {% set _hay_fuentes = (med.fuentes_precio and med.fuentes_precio | selectattr("pvp_iva") | list) or
+                               (med.ofertas_farmacia and med.ofertas_farmacia | selectattr("precio") | list) %}
+        {% if _hay_fuentes %}
+        <h4 style="margin-top:1rem; margin-bottom:0.5rem;">Precios encontrados en todas las fuentes</h4>
+        <table class="fuentes-table" role="grid">
+            <thead>
+                <tr><th>Fuente</th><th>CN</th><th>Precio</th><th>Enlace al producto</th></tr>
+            </thead>
+            <tbody>
+            {% for f in (med.fuentes_precio or []) %}
+                {% if f.pvp_iva is not none %}
+                <tr>
+                    <td>{{ f.fuente }}</td>
+                    <td style="white-space:nowrap; font-family:monospace; font-size:0.85rem; color:var(--pico-muted-color);">{{ f.cn or "—" }}</td>
+                    <td><strong>{{ "%.2f"|format(f.pvp_iva) }} €</strong>{% if f.precio_ref is not none %} <small>(ref. {{ "%.2f"|format(f.precio_ref) }} €)</small>{% endif %}</td>
+                    <td>{% if f.url %}<a href="{{ f.url }}" target="_blank" rel="noopener">{% if f.fuente in ('nomenclator', 'vademecum') %}Ver{% else %}Ver producto{% endif %}</a>{% else %}<span class="detail-muted">—</span>{% endif %}</td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+            </tbody>
+        </table>
+        {% set _hay_vademecum_precio = med.fuentes_precio and med.fuentes_precio | selectattr("fuente", "eq", "vademecum") | selectattr("pvp_iva") | list %}
+        {% if _hay_vademecum_precio %}
+        <p style="margin-top:0.5rem; font-size:0.82rem; color: var(--pico-muted-color);">
+            <strong>Nota:</strong> El precio de Vademécum es el PVP de referencia del laboratorio. Las farmacias online pueden aplicar descuentos comerciales sobre este precio al tratarse de productos de precio libre.
+        </p>
+        {% endif %}
+        {% endif %}
+    </section>
+
+    {% set _ofertas_con_precio = med.ofertas_farmacia | selectattr("precio") | list %}
+    {% set _ofertas_sin_resultado = med.ofertas_farmacia | selectattr("sin_resultado", "defined") | selectattr("sin_resultado") | list %}
+    {% if med.ofertas_farmacia %}
+    <section>
+        <h3>Comparar en farmacias online
+            {%- set _cns = med.presentaciones | map(attribute='cn') | select | list if med.presentaciones else [] %}
+            {%- if _cns %}
+            <small style="font-weight:normal; font-size:0.8rem; color:var(--pico-muted-color); margin-left:0.5rem; font-family:monospace;">CN: {{ _cns | join(' · ') }}</small>
+            {%- endif %}
+        </h3>
+        {% if _ofertas_con_precio %}
+        <p>Precios encontrados en {{ med.numero_fuentes_farmacia }} farmacia{{ 's' if med.numero_fuentes_farmacia != 1 else '' }} online.
+           <small style="color: var(--pico-muted-color);">Los precios de parafarmacia y productos de venta libre son de mercado libre y pueden variar.</small>
+        </p>
+        {# Precio mínimo para marcar la fila más barata #}
+        {% set _min_precio = namespace(val=none) %}
+        {% for oferta in _ofertas_con_precio %}
+            {% if _min_precio.val is none or oferta.precio < _min_precio.val %}
+                {% set _min_precio.val = oferta.precio %}
+            {% endif %}
+        {% endfor %}
+        <table class="fuentes-table comparar-table" role="grid">
+            <thead>
+                <tr>
+                    <th>Farmacia</th>
+                    <th style="text-align:right;">Precio</th>
+                    <th style="text-align:right;">Envío gratis desde</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for oferta in _ofertas_con_precio %}
+            {% set _es_min = oferta.precio == _min_precio.val %}
+            <tr{% if _es_min %} class="oferta-minprecio"{% endif %}>
+                <td>
+                    {% if _es_min %}<strong>{% endif %}
+                    {{ oferta.nombre_fuente }}
+                    {% if _es_min %}</strong> <span class="badge badge-libre" style="font-size:0.7rem;">Mejor precio</span>{% endif %}
+                </td>
+                <td style="text-align:right; white-space:nowrap;">
+                    <strong>{{ "%.2f"|format(oferta.precio) }} €</strong>
+                </td>
+                <td style="text-align:right; white-space:nowrap; color: var(--pico-muted-color); font-size:0.875rem;">
+                    {% if oferta.envio and oferta.envio.envio_gratis_desde is not none %}
+                        {{ "%.0f"|format(oferta.envio.envio_gratis_desde) }} €
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td style="text-align:right; white-space:nowrap;">
+                    <a href="{{ oferta.url }}" target="_blank" rel="noopener" class="portal-button" style="padding:0.25rem 0.75rem; font-size:0.85rem;">Ver oferta</a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="detail-muted">No se ha encontrado este producto en ninguna farmacia online integrada.</p>
+        {% endif %}
+        {% if _ofertas_sin_resultado %}
+        <p style="margin-top:0.75rem; font-size:0.85rem; color: var(--pico-muted-color);">
+            No encontrado en:
+            {% for o in _ofertas_sin_resultado %}
+                <a href="{{ o.url }}" target="_blank" rel="noopener" style="color:inherit;">{{ o.nombre_fuente }}</a>{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <section>
+        <h3>Documentación oficial</h3>
+        <ul>
+            {% if med.ficha_url %}
+            <li><a href="{{ med.ficha_url }}" target="_blank" rel="noopener">Ficha técnica</a></li>
+            {% endif %}
+            {% if med.prospecto_url %}
+            <li><a href="{{ med.prospecto_url }}" target="_blank" rel="noopener">Prospecto</a></li>
+            {% endif %}
+        </ul>
+    </section>
+
+    {% if med.vademecum %}
+    <section>
+        <h3>Complemento Vademécum</h3>
+        <div class="info-grid">
+            {% if med.vademecum.titulo %}
+            <p><strong>Ficha localizada:</strong> {{ med.vademecum.titulo }}</p>
+            {% endif %}
+            {% if med.vademecum.principio_activo and med.vademecum.principio_activo != med.principio_activo_texto %}
+            <p><strong>Principio activo:</strong> {{ med.vademecum.principio_activo }}</p>
+            {% endif %}
+            {% if med.vademecum.laboratorio and med.vademecum.laboratorio != med.laboratorio %}
+            <p><strong>Laboratorio comercializador:</strong> {{ med.vademecum.laboratorio }}</p>
+            {% endif %}
+            {% if med.vademecum.indicaciones %}
+            <p><strong>Indicaciones:</strong> {{ med.vademecum.indicaciones }}</p>
+            {% endif %}
+        </div>
+
+        <p class="external-actions">
+            {% if med.vademecum.url %}
+            <a href="{{ med.vademecum.url }}" target="_blank" rel="noopener" class="portal-button">Ver ficha en Vademécum</a>
+            {% endif %}
+            {% if med.vademecum.prospecto_url %}
+            <a href="{{ med.vademecum.prospecto_url }}" target="_blank" rel="noopener" class="portal-button portal-button-secondary">Prospecto Vademécum</a>
+            {% endif %}
+            {% if med.vademecum.busqueda_url %}
+            <a href="{{ med.vademecum.busqueda_url }}" target="_blank" rel="noopener" class="portal-button portal-button-secondary">Buscar en Vademécum</a>
+            {% endif %}
+        </p>
+    </section>
+    {% elif med.vademecum_busqueda_url %}
+    <section>
+        <h3>Complemento Vademécum</h3>
+        <p class="external-actions">
+            <a href="{{ med.vademecum_busqueda_url }}" target="_blank" rel="noopener" class="portal-button portal-button-secondary">Buscar este medicamento en Vademécum</a>
+        </p>
+    </section>
+    {% endif %}
+</article>
+{% endif %}

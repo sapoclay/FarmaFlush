@@ -1,0 +1,85 @@
+{% if productos_farmacia %}
+<p><small>{{ parafarmacia_total }} producto{{ 's' if parafarmacia_total != 1 else '' }} encontrado{{ 's' if parafarmacia_total != 1 else '' }} para <strong>{{ q }}</strong>{% if parafarmacia_total > productos_farmacia|length %} (página {{ parafarmacia_pagina }}){% endif %}</small></p>
+
+<div class="card-grid">
+{% for prod in productos_farmacia %}
+    <article class="med-card">
+        {% if prod.imagen_url %}
+        <img src="{{ prod.imagen_url }}" alt="{{ prod.nombre }}" loading="lazy">
+        {% endif %}
+
+        <h3>
+            <a href="/parafarmacia/{{ prod.fuente }}/{{ prod.object_id }}"
+               hx-get="/parafarmacia/{{ prod.fuente }}/{{ prod.object_id }}"
+               hx-target="#resultados"
+               hx-push-url="true">
+                {{ prod.nombre }}
+            </a>
+        </h3>
+        {% if prod.marca %}
+        <p style="margin:0.25rem 0;"><small>{{ prod.marca }}</small></p>
+        {% endif %}
+        {% if prod.nombre_fuente %}
+        <p style="margin:0.25rem 0;"><small>{{ prod.nombre_fuente }}</small></p>
+        {% endif %}
+        {% if prod.categoria_principal %}
+        <p style="margin:0.25rem 0;"><small>{{ prod.categoria_principal }}</small></p>
+        {% endif %}
+
+        {% if prod.precio is not none %}
+            <p class="precio-medio">{{ "%.2f"|format(prod.precio) }} € <small>(farmacia online)</small></p>
+        {% else %}
+            <p><small class="text-muted">Precio no disponible</small></p>
+        {% endif %}
+
+        {% if prod.envio and prod.envio.envio_gratis_desde is not none %}
+        <p style="margin:0.25rem 0;"><small>Envío gratis desde {{ "%.0f"|format(prod.envio.envio_gratis_desde) }} €</small></p>
+        {% endif %}
+
+        <p class="med-card-actions">
+            <a href="{{ prod.url_venta or prod.url }}" target="_blank" rel="noopener">Ver en {{ prod.nombre_fuente }}</a>
+        </p>
+    </article>
+{% endfor %}
+</div>
+
+{# --- Paginación parafarmacia --- #}
+{% set pf_total = parafarmacia_total | default(0) %}
+{% set pf_pagina = parafarmacia_pagina | default(1) %}
+{% set pf_tam = datos.tam | default(25) %}
+{% set pf_total_pags = (pf_total / pf_tam) | round(0, 'ceil') | int if pf_tam else 0 %}
+{% if pf_total_pags > 1 %}
+<p style="text-align:center;"><small>{{ pf_total }} productos (página {{ pf_pagina }} de {{ pf_total_pags }})</small></p>
+<nav class="paginacion" aria-label="Paginacion de productos">
+    {% if pf_pagina > 1 %}
+    <form action="/parafarmacia/buscar" method="get"
+          hx-get="/parafarmacia/buscar/progresivo" hx-target="#resultados"
+          class="paginacion-form">
+        <input type="hidden" name="q" value="{{ q }}">
+        <input type="hidden" name="tam" value="{{ tam_query }}">
+        <input type="hidden" name="pagina" value="{{ pf_pagina - 1 }}">
+        <button type="submit" class="portal-button">← Anterior</button>
+    </form>
+    {% endif %}
+    <span class="paginacion-estado">{{ pf_pagina }} / {{ pf_total_pags }}</span>
+    {% if pf_pagina < pf_total_pags %}
+    <form action="/parafarmacia/buscar" method="get"
+          hx-get="/parafarmacia/buscar/progresivo" hx-target="#resultados"
+          class="paginacion-form">
+        <input type="hidden" name="q" value="{{ q }}">
+        <input type="hidden" name="tam" value="{{ tam_query }}">
+        <input type="hidden" name="pagina" value="{{ pf_pagina + 1 }}">
+        <button type="submit" class="portal-button">Siguiente →</button>
+    </form>
+    {% endif %}
+</nav>
+{% endif %}
+
+{% elif busqueda_completa and q %}
+<h2 style="text-align:center; margin:0;">Sin resultados para <mark style="padding:0.1rem 0.45rem; border-radius:999px; background:#fff3bf; color:#1f2937;">{{ q }}</mark>.</h2>
+<p style="text-align:center; color: var(--pico-muted-color);">No se encontró este producto en las farmacias online integradas.</p>
+<p style="text-align:center;">
+    ¿Buscas un medicamento?
+    <a href="/buscar?q={{ q }}">Buscar en CIMA / Nomenclátor →</a>
+</p>
+{% endif %}

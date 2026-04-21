@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Verificador de PVP Oficial — ¿Te cobran bien en la farmacia? — FarmaFLUSH{% endblock %}
+
+{% block content %}
+<main class="container" style="max-width:700px;padding-top:2rem">
+
+    <div style="text-align:center;margin-bottom:1.5rem">
+        <a href="/">
+            <img src="{{ url_for('media_img', filename='logo.png') }}" alt="FarmaFLUSH"
+                 class="hero-logo" style="width:min(220px,60vw)">
+        </a>
+    </div>
+
+    <!-- Escudo Nomenclátor Oficial -->
+    <div style="text-align:center;margin-bottom:1.25rem">
+        <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do"
+           target="_blank" rel="noopener"
+           style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.45rem 1rem;border-radius:999px;border:1.5px solid #0d47a1;background:#e3f2fd;color:#0d47a1;text-decoration:none;font-size:0.8rem;font-weight:700">
+            🏛️ Nomenclátor oficial del Ministerio de Sanidad
+        </a>
+    </div>
+
+    <nav style="margin-bottom:1.25rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+        <a href="/" role="button" class="secondary outline" style="font-size:.85rem;padding:.3rem .75rem">← Inicio</a>
+        <a href="/verificar-ticket" role="button" class="outline" style="font-size:.85rem;padding:.3rem .75rem">🧾 Verificar ticket completo</a>
+    </nav>
+
+    <h1 style="font-size:1.5rem;margin-bottom:.3rem">🏛️ Verificador de PVP Oficial</h1>
+    <p style="font-size:.95rem;margin-bottom:.4rem;font-weight:600">
+        Lo que dice la ley vs. lo que te han cobrado
+    </p>
+    <p style="opacity:.7;font-size:.9rem;margin-bottom:1.5rem">
+        Introduce el nombre del medicamento o su <strong>Código Nacional (CN)</strong> y el precio que te han cobrado.
+        Contrastamos contra el <strong>PVP máximo legalmente intervenido</strong> registrado en el Nomenclátor oficial del SNS.
+    </p>
+
+    <form method="get" action="/verificar-precio"
+          hx-get="/verificar-precio" hx-target="#verificar-resultado" hx-indicator="#verificando"
+          style="margin-bottom:1.5rem">
+        <fieldset>
+            <label for="vq">Nombre del medicamento o Código Nacional (CN)</label>
+            <input type="search" id="vq" name="q" value="{{ q }}"
+                   placeholder="ej. ibuprofeno cinfa 600 mg 20 comprimidos  —  o CN: 656308"
+                   autocomplete="off" required minlength="3">
+
+            <label for="vprecio" style="margin-top:.75rem">Precio cobrado (€)</label>
+            <div style="display:flex;gap:.5rem;align-items:center">
+                <input type="number" id="vprecio" name="precio"
+                       min="0" step="0.01" placeholder="ej. 7,50"
+                       value="{{ precio_cobrado if precio_cobrado is not none else '' }}"
+                       style="max-width:140px">
+                <span style="opacity:.7">€</span>
+            </div>
+        </fieldset>
+
+        <button type="submit" style="margin-top:.75rem">Verificar precio</button>
+        <span id="verificando" class="htmx-indicator" style="margin-left:.75rem;opacity:.6">Buscando en el Nomenclátor…</span>
+    </form>
+
+    <div id="verificar-resultado">
+        {% include "_verificar_resultado.html" %}
+    </div>
+
+    <hr style="margin-top:2rem">
+    <p style="font-size:.8rem;opacity:.55;text-align:center">
+        Este verificador solo busca <strong>medicamentos con financiación pública</strong> registrados en el Nomenclátor oficial del SNS.
+        Los productos de parafarmacia, cosméticos y OTC <strong>no aparecerán aquí</strong> porque sus precios son libres y no están regulados.
+        Para buscar productos de parafarmacia, usa el <a href="/parafarmacia/buscar">buscador de parafarmacia</a>.
+    </p>
+</main>
+{% endblock %}

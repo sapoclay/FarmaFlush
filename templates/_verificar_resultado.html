@@ -1,0 +1,185 @@
+{# ────────────────────────────────────────────────────────────
+   CASO 1: coincidencia SEGURA (score ≥ 92) → mostrar veredicto
+   ──────────────────────────────────────────────────────────── #}
+{% if resultado and resultado.confianza == "seguro" %}
+<article class="verificar-resultado" style="margin-top:1rem">
+    <header style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+        <strong>Resultado</strong>
+        <span class="confianza-badge confianza-alta" title="El sistema identificó este medicamento con alta certeza">
+            Confianza: ALTA
+        </span>
+    </header>
+
+    <dl style="margin:.75rem 0 .5rem">
+        <dt style="font-size:.78rem;opacity:.6;margin-bottom:.15rem">Medicamento identificado en Nomenclátor SNS</dt>
+        <dd style="margin:0;font-weight:600">
+            <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do?metodo=verDetalle&prod={{ resultado.cn }}"
+               target="_blank" rel="noopener">{{ resultado.nombre }}</a>
+            <span style="font-size:.75rem;opacity:.55;font-weight:400"> · CN {{ resultado.cn }}</span>
+        </dd>
+    </dl>
+
+    {# Comparativa de precios #}
+    {% if diferencia %}
+        <hr style="margin:.75rem 0">
+        <div style="display:flex;gap:2rem;flex-wrap:wrap;margin-bottom:.75rem">
+            <dl style="margin:0">
+                <dt style="font-size:.78rem;opacity:.6;margin-bottom:.1rem">PVP oficial (SNS)</dt>
+                <dd style="margin:0;font-size:1.25rem;font-weight:700">{{ "%.2f"|format(diferencia.pvp_oficial) }} €</dd>
+            </dl>
+            <dl style="margin:0">
+                <dt style="font-size:.78rem;opacity:.6;margin-bottom:.1rem">Precio cobrado</dt>
+                <dd style="margin:0;font-size:1.25rem;font-weight:700">{{ "%.2f"|format(diferencia.precio_cobrado) }} €</dd>
+            </dl>
+        </div>
+
+        {% if diferencia.nivel == "ok" %}
+        <p class="veredicto veredicto-ok">
+            ✅ <strong>Has pagado el precio correcto</strong>
+        </p>
+        {% elif diferencia.nivel == "inferior" %}
+        <p class="veredicto veredicto-inferior">
+            ℹ️ <strong>Has pagado {{ "%.2f"|format(diferencia.diff|abs) }} € menos del PVP oficial</strong><br>
+            <span style="font-size:.88rem;font-weight:400">
+                Puede ser copago, precio de referencia u otro descuento aplicado. No hay nada que reclamar.
+            </span>
+        </p>
+        {% elif diferencia.nivel == "excesivo" %}
+        <p class="veredicto veredicto-alerta">
+            💸 <strong>Podrías haber pagado hasta {{ "%.2f"|format(diferencia.diff) }} € de más</strong><br>
+            <span style="font-size:.88rem;font-weight:400">
+                PVP oficial: <strong>{{ "%.2f"|format(diferencia.pvp_oficial) }} €</strong> — te cobraron
+                <strong>{{ "%.2f"|format(diferencia.precio_cobrado) }} €</strong>
+                (diferencia de <strong>{{ diferencia.pct }}%</strong>).
+                Comprueba CN, dosis y presentación con el ticket en mano.
+            </span>
+        </p>
+        {% else %}
+        <p class="veredicto veredicto-aviso">
+            ⚠️ <strong>Pagaste {{ "%.2f"|format(diferencia.diff) }} € más del precio oficial</strong><br>
+            <span style="font-size:.88rem;font-weight:400">
+                Una diferencia pequeña que puede deberse a formato, dosis o presentación distinta.
+            </span>
+        </p>
+        {% endif %}
+
+        <p style="font-size:.78rem;opacity:.5;margin-top:.5rem">
+            Solo el PVP del Nomenclátor SNS tiene carácter regulado (precio máximo intervenido).
+            La diferencia se calcula sobre el precio con IVA registrado en el Nomenclátor.
+        </p>
+
+    {% elif resultado.pvp %}
+        <hr style="margin:.75rem 0">
+        <p>PVP oficial: <strong>{{ "%.2f"|format(resultado.pvp) }} €</strong></p>
+        <p style="font-size:.85rem;opacity:.7">Introduce el precio cobrado para obtener la comparativa.</p>
+    {% else %}
+        <hr style="margin:.75rem 0">
+        <p style="opacity:.65;font-size:.9rem">No hay precio registrado en el Nomenclátor para este CN.</p>
+    {% endif %}
+
+    {# Puente discreto al buscador de medicamentos #}
+    {% if resultado.nombre %}
+    <hr style="margin:1.25rem 0 .75rem;opacity:.2">
+    <p style="font-size:.85rem;opacity:.65;margin:0">
+        ¿Quieres consultar más información sobre este medicamento?
+        {% if resultado.nregistro %}
+        <a href="/medicamento/{{ resultado.nregistro }}?confianza={{ resultado.confianza }}" style="white-space:nowrap">Ver ficha del medicamento →</a>
+        {% else %}
+        <a href="/buscar?q={{ (q_parafarmacia or resultado.nombre)|urlencode }}" style="white-space:nowrap">Ver ficha del medicamento →</a>
+        {% endif %}
+    </p>
+    {% endif %}
+</article>
+
+
+{# ────────────────────────────────────────────────────────────────────────
+   CASO 2: coincidencia PROBABLE o DÉBIL → pedir confirmación al usuario
+   ──────────────────────────────────────────────────────────────────────── #}
+{% elif resultado and resultado.confianza != "seguro" %}
+<article style="margin-top:1rem">
+    <header style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+        <strong>Confirma el medicamento</strong>
+        <span class="confianza-badge confianza-{{ 'media' if resultado.confianza == 'probable' else 'baja' }}"
+              title="La búsqueda no identificó el medicamento con certeza suficiente">
+            Confianza: {{ 'MEDIA' if resultado.confianza == 'probable' else 'BAJA' }}
+        </span>
+    </header>
+    <p style="font-size:.88rem;opacity:.75;margin:.5rem 0 1rem">
+        No hemos podido identificar el medicamento con certeza suficiente.
+        Selecciona cuál corresponde a tu búsqueda para obtener el resultado:
+    </p>
+
+    <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.5rem">
+        {% set ya_mostrado = namespace(cn=None) %}
+        {% if resultado %}
+        <li>
+            <a href="/verificar-precio?q={{ resultado.nombre|urlencode }}&precio={{ precio_cobrado or '' }}"
+               class="candidato-item candidato-item--probable">
+                <span class="candidato-nombre">{{ resultado.nombre }}</span>
+                <span class="candidato-meta">
+                    CN {{ resultado.cn }}{% if resultado.pvp %} · {{ "%.2f"|format(resultado.pvp) }} €{% endif %}
+                    <span class="candidato-sugerido">sugerido</span>
+                </span>
+            </a>
+        </li>
+        {% set ya_mostrado.cn = resultado.cn %}
+        {% endif %}
+        {% for c in candidatos %}
+            {% if c.cn != ya_mostrado.cn %}
+            <li>
+                <a href="/verificar-precio?q={{ c.nombre|urlencode }}&precio={{ precio_cobrado or '' }}"
+                   class="candidato-item">
+                    <span class="candidato-nombre">{{ c.nombre }}</span>
+                    <span class="candidato-meta">
+                        CN {{ c.cn }}{% if c.pvp %} · {{ "%.2f"|format(c.pvp) }} €{% endif %}
+                    </span>
+                </a>
+            </li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+    <p style="font-size:.78rem;opacity:.5;margin-top:.75rem">
+        Si ninguna opción corresponde, prueba con el nombre completo incluyendo dosis y unidades
+        (ej. «ibuprofeno 600 mg 20 comprimidos»).
+    </p>
+</article>
+
+
+{# ────────────────────────────────────────────────────────────
+   CASO 3: sin resultado, solo candidatos
+   ──────────────────────────────────────────────────────────── #}
+{% elif candidatos %}
+<article style="margin-top:1rem">
+    <header><strong>¿Te refieres a alguno de estos?</strong></header>
+    <p style="font-size:.85rem;opacity:.7;margin:.4rem 0 .75rem">No se encontró coincidencia directa. Selecciona si alguno corresponde:</p>
+    <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.5rem">
+        {% for c in candidatos %}
+        <li>
+            <a href="/verificar-precio?q={{ c.nombre|urlencode }}&precio={{ precio_cobrado or '' }}"
+               class="candidato-item">
+                <span class="candidato-nombre">{{ c.nombre }}</span>
+                <span class="candidato-meta">
+                    CN {{ c.cn }}{% if c.pvp %} · {{ "%.2f"|format(c.pvp) }} €{% endif %}
+                </span>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</article>
+
+
+{# ────────────────────────────────────────────────────────────
+   CASO 4: búsqueda sin resultados
+   ──────────────────────────────────────────────────────────── #}
+{% elif q %}
+<p style="opacity:.65;margin-top:.75rem">
+    {% if busqueda_por_cn|default(false) %}
+        El CN <em>{{ q }}</em> no figura en el Nomenclátor SNS.
+        Puede que sea un producto de parafarmacia (precio libre) o un medicamento sin financiación pública.
+        Si tienes el nombre, prueba a buscarlo.
+    {% else %}
+        No se encontró <em>{{ q }}</em> en el Nomenclátor SNS.
+        Prueba con el nombre completo incluyendo dosis (ej. «ibuprofeno 600 mg 20 comprimidos»).
+    {% endif %}
+</p>
+{% endif %}

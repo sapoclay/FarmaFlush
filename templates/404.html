@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{% if error_500 %}Error del servidor{% else %}Página no encontrada{% endif %} — FarmaFLUSH 100ml{% endblock %}
+{% block content %}
+{% if not error_500 %}
+<div style="text-align:center; padding:2rem 0 2rem;">
+    <img src="/img/farmaflus404.png" alt="Página no encontrada"
+         style="max-width:280px; width:100%; margin:0 auto; display:block;">
+</div>
+{% endif %}
+{% include "_search_form.html" %}
+<section style="text-align:center; padding:1rem 0 2rem;">
+    {% if error_500 %}
+    <p style="font-size:4rem; margin:0;">⚠️</p>
+    {% endif %}
+    <h1 style="font-size:2.5rem; margin:0.5rem 0;">{% if error_500 %}500{% else %}404{% endif %}</h1>
+    <p style="margin-bottom:2rem;">
+        {% if error_500 %}
+        <span style="font-size:1.1rem; color:var(--pico-muted-color);">
+            Se ha producido un error interno. Inténtalo de nuevo en unos momentos.
+        </span>
+        {% else %}
+        <span style="
+            display:inline-block;
+            font-size:1.15rem;
+            font-weight:600;
+            color:#7f1d1d;
+            background:#fee2e2;
+            border:1px solid #fca5a5;
+            border-radius:8px;
+            padding:.55rem 1.1rem;
+        ">🔍 Esta página no existe o ha sido movida.</span>
+        {% endif %}
+    </p>
+    <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+        <a href="/" role="button">💊 Buscar medicamentos</a>
+        <a href="/parafarmacia/buscar" role="button" class="secondary">💄 Buscar parafarmacia</a>
+    </div>
+</section>
+{% endblock %}

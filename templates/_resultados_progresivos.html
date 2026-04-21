@@ -1,0 +1,22 @@
+<div id="resultados-live"
+     {% if not busqueda_completa %}
+     hx-get="/buscar/progreso/{{ job_id }}"
+     hx-trigger="load delay:150ms, every 700ms"
+     hx-target="this"
+     hx-swap="outerHTML show:no-scroll"
+     {% endif %}>
+    {% if error_busqueda %}
+    <p style="text-align:center; color:#b71c1c;">{{ error_busqueda }}</p>
+    {% elif estado_busqueda and not busqueda_completa %}
+    <section style="min-height:9rem; display:grid; place-items:center; text-align:center; margin-bottom:1rem;">
+        <p style="margin:0;"><span class="spinner"></span> {{ estado_busqueda }}</p>
+    </section>
+    {% endif %}
+
+    {% if busqueda_completa and not error_busqueda %}
+        {% include "_resultados.html" %}
+    {% endif %}
+</div>
+{% if busqueda_completa %}
+<script>document.dispatchEvent(new CustomEvent('ff:cargaCompleta'))</script>
+{% endif %}

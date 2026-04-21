@@ -1,0 +1,192 @@
+{% if prod %}
+<article>
+    <a href="/" hx-get="/" hx-target="main" hx-push-url="true" class="portal-button detail-back-button">← Volver</a>
+
+    <header style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap;">
+        {% if prod.imagen_url %}
+        <img src="{{ prod.imagen_url }}" alt="{{ prod.nombre }}" style="max-width:120px; border-radius:6px;">
+        {% endif %}
+        <div>
+            <h2 style="margin-bottom:0.25rem;">{{ prod.nombre }}</h2>
+            {% if prod.marca %}
+            <p style="margin:0;">{{ prod.marca }}</p>
+            {% endif %}
+            <div class="detail-badges">
+                {% if prod.stock %}
+                    <span class="badge badge-libre">Disponible</span>
+                {% else %}
+                    <span class="badge badge-receta">Consultar stock</span>
+                {% endif %}
+                {% if prod.es_otc %}
+                    <span class="badge badge-generico">Venta libre</span>
+                {% endif %}
+                {% if prod.es_pack %}
+                    <span class="badge badge-generico">Pack</span>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <div class="detail-layout">
+        <div class="detail-column">
+            <section>
+                <h3>Identidad del producto</h3>
+                <div class="info-grid">
+                    {% if prod.categoria_principal %}
+                    <p><strong>Categoría principal:</strong> {{ prod.categoria_principal }}</p>
+                    {% endif %}
+                    {% if prod.formato %}
+                    <p><strong>Formato:</strong> {{ prod.formato }}</p>
+                    {% endif %}
+                    {% if prod.formato_size %}
+                    <p><strong>Presentación:</strong> {{ prod.formato_size }}</p>
+                    {% endif %}
+                    {% if prod.contenido %}
+                    <p><strong>Contenido:</strong> {{ prod.contenido }}</p>
+                    {% endif %}
+                    {% if prod.sku %}
+                    <p><strong>SKU:</strong> {{ prod.sku }}</p>
+                    {% endif %}
+                    {% if prod.object_id %}
+                    <p><strong>ID de catálogo:</strong> {{ prod.object_id }}</p>
+                    {% endif %}
+                    {% if prod.meta_titulo %}
+                    <p><strong>Título comercial:</strong> {{ prod.meta_titulo }}</p>
+                    {% endif %}
+                </div>
+
+                {% if prod.categorias %}
+                <div class="tag-list">
+                    {% for categoria in prod.categorias %}
+                    <span class="tag-chip">{{ categoria }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </section>
+
+            {% if prod.descripcion_html %}
+            <section>
+                <h3>Descripción</h3>
+                <div class="external-description">{{ prod.descripcion_html | safe }}</div>
+            </section>
+            {% elif prod.descripcion %}
+            <section>
+                <h3>Descripción</h3>
+                <p>{{ prod.descripcion }}</p>
+            </section>
+            {% endif %}
+
+            {% if prod.ingredientes or prod.dimensiones %}
+            <section>
+                <h3>Atributos complementarios</h3>
+                <div class="info-grid">
+                    {% if prod.ingredientes %}
+                    <p><strong>Ingredientes o composición:</strong> {{ prod.ingredientes }}</p>
+                    {% endif %}
+                    {% if prod.dimensiones %}
+                    <p><strong>Dimensiones:</strong> {{ prod.dimensiones }}</p>
+                    {% endif %}
+                </div>
+            </section>
+            {% endif %}
+        </div>
+
+        <aside class="detail-sidebar">
+            <section>
+                <h3>Precio actual</h3>
+                {% if prod.precio_minimo is not none %}
+                    <p class="kpi-value">{{ "%.2f"|format(prod.precio_minimo) }} €</p>
+                    {% if prod.numero_fuentes and prod.numero_fuentes > 1 and prod.precio_maximo is not none and prod.precio_maximo != prod.precio_minimo %}
+                    <p class="detail-muted">Rango comparado: {{ "%.2f"|format(prod.precio_minimo) }} € - {{ "%.2f"|format(prod.precio_maximo) }} €</p>
+                    {% endif %}
+                {% else %}
+                    <p class="detail-muted">Precio no disponible actualmente.</p>
+                {% endif %}
+
+
+
+                {% if prod.envio %}
+                <p><strong>Envío:</strong>
+                    {% if prod.envio.tiene_gastos_envio %}
+                        con gastos de envío
+                    {% else %}
+                        sin gastos de envío
+                    {% endif %}
+                    {% if prod.envio.coste_envio_texto %}
+                        · {{ prod.envio.coste_envio_texto }}
+                    {% endif %}
+                    {% if prod.envio.envio_gratis_desde is not none %}
+                        · gratis desde {{ "%.2f"|format(prod.envio.envio_gratis_desde) }} €
+                    {% endif %}
+                    {% if prod.envio.plazo_entrega %}
+                        · {{ prod.envio.plazo_entrega }}
+                    {% endif %}
+                </p>
+                {% endif %}
+            </section>
+
+            <section>
+                <h3>Fuentes y compra</h3>
+                <div class="source-list">
+                    {% for oferta in prod.ofertas %}
+                    <div class="source-card">
+                        <p><strong>{{ oferta.nombre_fuente }}</strong></p>
+                        {% if oferta.precio is not none %}
+                        <p>{{ "%.2f"|format(oferta.precio) }} €</p>
+                        {% endif %}
+                        <p class="detail-muted">
+                            {% if oferta.stock %}
+                                Disponible
+                            {% else %}
+                                Stock no confirmado
+                            {% endif %}
+                        </p>
+                        {% if oferta.envio %}
+                        <p class="detail-muted">
+                            {% if oferta.envio.tiene_gastos_envio %}
+                                Con gastos de envío
+                            {% else %}
+                                Sin gastos de envío
+                            {% endif %}
+                            {% if oferta.envio.coste_envio_texto %}
+                                · {{ oferta.envio.coste_envio_texto }}
+                            {% endif %}
+                            {% if oferta.envio.envio_gratis_desde is not none %}
+                                · gratis desde {{ "%.2f"|format(oferta.envio.envio_gratis_desde) }} €
+                            {% endif %}
+                        </p>
+                        {% endif %}
+                        <p>
+                            <a href="{{ oferta.url }}" target="_blank" rel="noopener" class="portal-button">Ver ficha externa</a>
+                        </p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section>
+                <h3>Origen de datos</h3>
+                {% set _n_con_oferta = (prod.fuentes_con_oferta or [])|length %}
+                {% set _n_total = prod.total_proveedores or (prod.fuentes_consultadas or [])|length or 1 %}
+                <p><strong>Proveedores consultados:</strong> {{ _n_total }}</p>
+                <p><strong>Proveedores con oferta:</strong> {{ _n_con_oferta }}</p>
+                {% if prod.fuentes_consultadas %}
+                <p class="detail-muted">Consultados:
+                    {% for f in prod.fuentes_consultadas %}
+                        {% if f in (prod.fuentes_con_oferta or []) %}
+                            <strong>{{ f }}</strong>
+                        {% else %}
+                            <span style="opacity:0.55;">{{ f }}</span>
+                        {% endif %}
+                        {% if not loop.last %} · {% endif %}
+                    {% endfor %}
+                </p>
+                {% endif %}
+                {% if _n_con_oferta < _n_total %}
+                <p class="detail-muted">Los proveedores sin resultado no disponen de este producto en su catálogo en este momento.</p>
+                {% endif %}
+            </section>
+        </aside>
+    </div>
+</article>
+{% endif %}

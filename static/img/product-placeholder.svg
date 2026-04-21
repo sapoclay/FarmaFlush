@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" role="img" aria-labelledby="title desc">
+  <title id="title">Imagen no disponible</title>
+  <desc id="desc">Marcador de posicion para medicamentos sin fotografia en CIMA.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f3f7fb"/>
+      <stop offset="100%" stop-color="#dbe8f4"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="180" rx="18" fill="url(#bg)"/>
+  <rect x="26" y="34" width="188" height="112" rx="16" fill="#ffffff" stroke="#b8cad9" stroke-width="4"/>
+  <g transform="translate(60 54)">
+    <rect x="0" y="18" width="120" height="36" rx="18" fill="#e95f5f" transform="rotate(-18 60 36)"/>
+    <rect x="60" y="18" width="60" height="36" rx="18" fill="#ffd9d9" transform="rotate(-18 60 36)"/>
+    <rect x="54" y="10" width="12" height="52" rx="6" fill="#ffffff" transform="rotate(-18 60 36)"/>
+  </g>
+  <text x="120" y="156" text-anchor="middle" font-family="Verdana, sans-serif" font-size="16" fill="#456179">
+    Imagen no disponible
+  </text>
+</svg>
