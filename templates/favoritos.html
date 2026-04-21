@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Mis favoritos — FarmaFLUSH{% endblock %}
+
+{% block content %}
+<section class="search-section">
+    <header class="search-branding-block">
+        <img src="{{ url_for('media_img', filename='logo.png') }}" alt="FarmaFLUSH" class="hero-logo">
+        <h1 style="margin-bottom:0.5rem;">⭐ Mis medicamentos favoritos</h1>
+        <p style="margin-bottom:0;">Medicamentos que has guardado en este dispositivo. Los datos (nombre, precio, financiación) se consultan siempre al servidor para mostrarte información actualizada.</p>
+    </header>
+</section>
+
+<!-- Aviso uso terapéutico -->
+<div style="max-width:760px; margin:0 auto 1.25rem; padding:0.75rem 1rem; border-radius:8px; border:1.5px solid var(--pico-primary-border); background:color-mix(in srgb, var(--pico-primary-background) 40%, transparent); font-size:0.83rem; color:var(--pico-color); line-height:1.55;">
+    ℹ️ <strong>Lista informativa.</strong> Esta sección muestra precios y fichas técnicas de referencia.
+    <strong>No sustituye la pauta establecida por su médico ni el consejo de su farmacéutico.</strong>
+</div>
+
+<section style="max-width:900px; margin:0 auto 2rem;">
+    <div id="favs-container">
+        <p id="favs-vacio" style="text-align:center; color:var(--pico-muted-color); margin-top:2rem; display:none;">
+            No tienes ningún medicamento guardado todavía.<br>
+            <a href="/buscar">Busca un medicamento</a> y pulsa la estrella ☆ para guardarlo aquí.
+        </p>
+        <div id="favs-cargando" style="text-align:center; color:var(--pico-muted-color); margin-top:2rem; display:none;">
+            <small>Cargando datos actualizados…</small>
+        </div>
+        <div id="favs-grid" class="card-grid"></div>
+    </div>
+
+    <div id="favs-footer" style="text-align:right; margin-top:1rem; display:none;">
+        <button id="btn-borrar-todos" class="portal-button portal-button-secondary" style="font-size:0.85rem; border-color:var(--pico-del-color, #ef4444); color:var(--pico-del-color, #ef4444);">
+            🗑 Borrar todos los favoritos
+        </button>
+    </div>
+</section>
+
+<script>
+(function () {
+    var grid       = document.getElementById('favs-grid');
+    var vacio      = document.getElementById('favs-vacio');
+    var cargando   = document.getElementById('favs-cargando');
+    var footer     = document.getElementById('favs-footer');
+    var btnBorrar  = document.getElementById('btn-borrar-todos');
+
+    function cargarFavoritos() {
+        var favs = window.FF_Favoritos ? window.FF_Favoritos.leer() : [];
+
+        if (favs.length === 0) {
+            vacio.style.display = 'block';
+            cargando.style.display = 'none';
+            footer.style.display = 'none';
+            grid.innerHTML = '';
+            return;
+        }
+
+        vacio.style.display = 'none';
+        cargando.style.display = 'block';
+        footer.style.display = 'none';
+        grid.innerHTML = '';
+
+        // Ordenar del más reciente al más antiguo
+        favs.sort(function(a, b) { return b.guardado - a.guardado; });
+        var nregistros = favs.map(function(f) { return f.nregistro; });
+
+        // Solicitar tarjetas frescas al servidor
+        fetch('/api/favoritos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ nregistros: nregistros })
+        })
+        .then(function(resp) {
+            cargando.style.display = 'none';
+            if (resp.status === 204) {
+                vacio.style.display = 'block';
+                return;
+            }
+            return resp.text();
+        })
+        .then(function(html) {
+            if (!html) return;
+            grid.innerHTML = html;
+            footer.style.display = 'block';
+            // Re-procesar HTMX para los nuevos enlaces
+            if (window.htmx) htmx.process(grid);
+            // Reinicializar botones de estrella del sistema global
+            if (window.FF_Favoritos) {
+                // Los botones ya vienen marcados como ★ desde el servidor
+            }
+        })
+        .catch(function() {
+            cargando.style.display = 'none';
+            grid.innerHTML = '<p style="color:var(--pico-muted-color); text-align:center;">No se pudo conectar con el servidor. Verifica tu conexión.</p>';
+        });
+    }
+
+    // Quitar un favorito desde la tarjeta
+    grid.addEventListener('click', function(e) {
+        var btn = e.target.closest('.btn-quitar-fav-card');
+        if (!btn) return;
+        var nr = btn.dataset.nregistro;
+        if (window.FF_Favoritos) window.FF_Favoritos.borrar(nr);
+        // Eliminar la tarjeta del DOM sin recargar
+        var card = btn.closest('article.med-card');
+        if (card) card.remove();
+        if (grid.querySelectorAll('article.med-card').length === 0) {
+            vacio.style.display = 'block';
+            footer.style.display = 'none';
+        }
+    });
+
+    btnBorrar.addEventListener('click', function() {
+        if (!confirm('¿Borrar todos los favoritos guardados?')) return;
+        if (window.FF_Favoritos) window.FF_Favoritos.limpiar();
+        grid.innerHTML = '';
+        vacio.style.display = 'block';
+        footer.style.display = 'none';
+    });
+
+    // Esperar a que FF_Favoritos esté disponible (definido al final del <body>)
+    if (window.FF_Favoritos) {
+        cargarFavoritos();
+    } else {
+        window.addEventListener('load', cargarFavoritos);
+    }
+}());
+</script>
+{% endblock %}
+

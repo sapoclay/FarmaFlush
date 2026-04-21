@@ -1,0 +1,50 @@
+{% for med in meds %}
+<article class="med-card">
+    {% if med.imagen_url %}
+    <img src="{{ med.imagen_url }}" alt="{{ med.nombre }}" loading="lazy">
+    {% endif %}
+
+    <h3 style="margin-bottom:0.3rem;">
+        <a href="/medicamento/{{ med.nregistro }}">
+            {{ med.nombre }}
+        </a>
+        <button class="btn-fav es-favorito"
+                data-nregistro="{{ med.nregistro }}"
+                title="Quitar de favoritos"
+                aria-pressed="true">★</button>
+    </h3>
+
+    <p style="margin:0.2rem 0;"><small>{{ med.laboratorio }} · {{ med.forma }} · {{ med.dosis }}</small></p>
+
+    <p style="margin:0.25rem 0;">
+        {% if med.receta %}
+            <span class="badge badge-receta">Con receta</span>
+        {% else %}
+            <span class="badge badge-libre">Sin receta</span>
+        {% endif %}
+        {% if med.generico and 'EFG' in med.nombre|upper %}
+            <span class="badge badge-generico">Genérico</span>
+        {% endif %}
+    </p>
+
+    {# Precio de referencia (sin scraping de farmacias para no ralentizar) #}
+    {% if med.precio_oficial is not none %}
+    <p style="margin:0.3rem 0; font-size:0.9rem;">
+        Precio de referencia: <strong>{{ "%.2f"|format(med.precio_oficial) }} €</strong>
+        <small>({{ "Vademécum" if (med.fuentes_precio | selectattr("fuente", "eq", "vademecum") | list) else "SNS" }})</small>
+    </p>
+    {% endif %}
+
+    <div style="margin-top:0.6rem; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        <a href="/medicamento/{{ med.nregistro }}"
+           class="portal-button" style="font-size:0.82rem;">Ver ficha y precios</a>
+        <button class="portal-button portal-button-secondary btn-quitar-fav-card"
+                data-nregistro="{{ med.nregistro }}"
+                style="font-size:0.82rem;">✕ Quitar</button>
+    </div>
+</article>
+{% else %}
+<p style="text-align:center; color:var(--pico-muted-color);">
+    No se pudieron cargar los datos de los medicamentos guardados.
+</p>
+{% endfor %}

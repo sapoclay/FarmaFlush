@@ -140,6 +140,7 @@ FarmaFLUSH/
 │   ├── verificar.html                   # Verificador precio individual
 │   ├── ticket.html                      # Verificador multi-producto (modo ticket)
 │   ├── fuentes.html                     # Fuentes consultadas
+│   ├── favoritos.html                   # Medicamentos favoritos del usuario
 │   ├── _search_form.html                # Formulario de búsqueda (fragmento HTMX)
 │   ├── _resultados.html                 # Tarjetas de resultados (fragmento HTMX)
 │   ├── _resultados_progresivos.html     # Polling progresivo
@@ -147,6 +148,7 @@ FarmaFLUSH/
 │   ├── _parafarmacia.html               # Parafarmacia (fragmento HTMX)
 │   ├── _verificar_resultado.html        # Resultado verificador individual (fragmento HTMX)
 │   ├── _ticket_resultado.html           # Resultado modo ticket (fragmento HTMX)
+│   ├── _favoritos_tarjetas.html         # Tarjetas de favoritos (fragmento renderizado por API)
 │   └── 404.html
 ├── data/                    # Base de datos SQLite
 └── img/                     # Imágenes descargadas de CIMA
@@ -317,6 +319,42 @@ Los scrapers de farmacias online devuelven en ocasiones medicamentos regulados (
 - **Barra de progreso con texto descriptivo:** al navegar entre secciones o al enviar una búsqueda, aparece una barra en la parte superior con pasos cronometrados y una pastilla en la esquina superior derecha que muestra el porcentaje y el texto de la fase actual (ej: `58% · Procesando resultados…`); la barra llega al 100% / «¡Listo!» en el momento exacto en que el servidor termina la búsqueda (incluyendo el caso de sin resultados), y se desvanece automáticamente. Implementación: las navegaciones reales usan `sessionStorage`; las búsquedas HTMX se cierran mediante el evento personalizado `ff:cargaCompleta` emitido por `_resultados_progresivos.html`
 - **Páginas de error personalizadas:** manejadores `@app.errorhandler(404)` y `@app.errorhandler(500)` registrados globalmente en Flask; el template 404 muestra icono, código de error, mensaje descriptivo diferenciado según el tipo de error, y botones de acción hacia los dos buscadores
 
+### 9. Búsqueda con precios diferenciados por formato
+
+Cuando hay varios formatos del mismo medicamento (ej. paracetamol 650 mg, paracetamol 1 g, paracetamol 100 mg), la consulta a farmacias se construye incluyendo la dosis específica del medicamento, no el término genérico tecleado por el usuario. Así cada tarjeta muestra el precio del formato exacto, no el mismo resultado para todos.
+
+Prioridad de consulta:
+
+1. `INN + dosis` del medicamento (ej. `PARACETAMOL 650 mg`)
+2. `INN sin dosis` — fallback si no hay resultado con dosis exacta
+3. `INN base sin sufijo de sal` + dosis (ej. `AMOXICILINA 500 mg` en lugar de `AMOXICILINA TRIHIDRATO 500 mg`)
+4. Término original tecleado por el usuario — último recurso
+
+### 10. Precio de referencia vs precio de farmacia
+
+Las tarjetas de búsqueda distinguen claramente el origen del precio mostrado:
+
+| Situación | Mensaje mostrado |
+|-----------|------------------|
+| Hay ofertas de farmacias online | "El precio más bajo encontrado es de: X.X€ (Farmacia)" con enlace a la oferta |
+| Solo precio del Nomenclátor o Vademécum | "Precio de referencia: X.X€ (SNS / Vademécum)" sin enlace |
+| Medicamento con receta sin precio | Enlace al Nomenclátor del SNS |
+| Sin precio en ninguna fuente | "Precio no disponible en las fuentes consultadas" |
+
+### 11. Favoritos — medicamentos guardados (`/favoritos`)
+
+El usuario puede guardar medicamentos con el botón ☆ presente en cada tarjeta de búsqueda y en la ficha de detalle. Los favoritos se almacenan en el `localStorage` del navegador.
+
+**Diseño técnico:**
+
+- **Solo se guarda el `nregistro`** (número de registro) y la fecha. Nunca se persisten nombre, precio ni laboratorio.
+- Al abrir `/favoritos`, el navegador envía los `nregistro` al servidor vía `POST /api/favoritos`, que devuelve tarjetas HTML con datos **siempre frescos** de CIMA + precio oficial del Nomenclátor.
+- En `/favoritos`, los enlaces de "Ver ficha y precios" abren la ficha completa con navegación normal a `/medicamento/<nregistro>` para garantizar que la vista de detalle cargue siempre correctamente.
+- **Precarga offline:** al marcar un favorito, se lanza silenciosamente un `fetch` a la ficha del medicamento para que quede en la caché HTTP del navegador y sea accesible sin conexión.
+- Los datos de precio en la página de favoritos son solo de referencia (Nomenclátor/Vademécum); para ver precios de farmacias online hay que entrar en la ficha individual.
+- **Aviso informativo** visible en la página: _"Esta lista es informativa de precios y fichas técnicas. No sustituye la pauta establecida por su médico ni el consejo de su farmacéutico."_
+- El badge numérico en el header compacto muestra cuántos medicamentos hay guardados.
+
 ### 8. Circuit breaker en scrapers
 
 Todos los scrapers con cliente HTTP persistente implementan un circuit breaker:
@@ -413,6 +451,9 @@ conn.execute('PRAGMA journal_mode=WAL')
 
 ## 🚀 Roadmap
 
+- [x] Favoritos de medicamentos guardados en el navegador (localStorage + datos frescos vía API)
+- [x] Precios diferenciados por formato/dosis de medicamento
+- [x] Precio de referencia visible en tarjetas cuando no hay farmacias online
 - [ ] Modo ticket: exportar resultado en PDF
 - [ ] Historial de verificaciones (usuario registrado)
 - [ ] API pública de validación de precios (B2B)

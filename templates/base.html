@@ -289,6 +289,42 @@
             border-color: var(--pico-primary);
             color: var(--pico-primary);
         }
+        /* --- Favoritos --- */
+        .btn-fav {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            line-height: 1;
+            padding: 0.2rem 0.4rem;
+            border-radius: 6px;
+            transition: transform 0.15s, opacity 0.15s;
+            opacity: 0.55;
+            vertical-align: middle;
+        }
+        .btn-fav:hover { opacity: 1; transform: scale(1.2); }
+        .btn-fav.es-favorito { opacity: 1; }
+        .btn-fav-detalle {
+            font-size: 1.3rem;
+            padding: 0.3rem 0.6rem;
+        }
+        .header-fav-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--pico-primary);
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            border-radius: 999px;
+            min-width: 1.1rem;
+            height: 1.1rem;
+            padding: 0 0.25rem;
+            margin-left: 0.2rem;
+            vertical-align: middle;
+            display: none;
+        }
+        }
         .hero-logo {
             display: block;
             width: min(320px, 80vw);
@@ -763,6 +799,7 @@
         <nav class="header-nav-btns" aria-label="Cambiar sección">
             <a href="/buscar" class="header-nav-btn verificar-cta-banner">💊 Medicamentos</a>
             <a href="/parafarmacia/buscar" class="header-nav-btn verificar-cta-banner">💄 Parafarmacia</a>
+            <a href="/favoritos" class="header-nav-btn verificar-cta-banner" id="btn-header-favs" title="Mis medicamentos guardados">⭐ Favoritos<span class="header-fav-badge" id="fav-count-badge"></span></a>
         </nav>
     </header>
 
@@ -1011,6 +1048,94 @@
                 iniciar(true);
             }
         });
+    }());
+    </script>
+
+    <!-- ===== Sistema de Favoritos (localStorage) ===== -->
+    <script>
+    (function () {
+        var STORAGE_KEY = 'ff_favoritos';
+
+        function leerFavoritos() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { return []; }
+        }
+
+        function guardarFavoritos(favs) {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(favs)); } catch(e) {}
+        }
+
+        function esFavorito(nregistro) {
+            return leerFavoritos().some(function(f) { return f.nregistro === nregistro; });
+        }
+
+        function toggleFavorito(nregistro) {
+            var favs = leerFavoritos();
+            var idx = favs.findIndex(function(f) { return f.nregistro === nregistro; });
+            if (idx >= 0) {
+                favs.splice(idx, 1);
+                guardarFavoritos(favs);
+                return false; // ya no es favorito
+            } else {
+                // Solo guardamos el nregistro y la fecha: los datos del medicamento
+                // se obtienen siempre frescos desde el servidor al abrir /favoritos.
+                favs.push({ nregistro: nregistro, guardado: Date.now() });
+                guardarFavoritos(favs);
+                // Precarga silenciosa para disponibilidad offline (caché del navegador)
+                try { fetch('/medicamento/' + encodeURIComponent(nregistro), { method: 'GET', credentials: 'same-origin' }); } catch(e) {}
+                return true; // ahora es favorito
+            }
+        }
+
+        function actualizarBoton(btn, esFav) {
+            btn.textContent = esFav ? '★' : '☆';
+            btn.title = esFav ? 'Quitar de favoritos' : 'Guardar en favoritos';
+            btn.classList.toggle('es-favorito', esFav);
+            btn.setAttribute('aria-pressed', esFav ? 'true' : 'false');
+        }
+
+        function actualizarBadge() {
+            var badge = document.getElementById('fav-count-badge');
+            if (!badge) return;
+            var n = leerFavoritos().length;
+            badge.textContent = n > 0 ? n : '';
+            badge.style.display = n > 0 ? 'inline-flex' : 'none';
+        }
+
+        function inicializarBotones() {
+            document.querySelectorAll('.btn-fav[data-nregistro]').forEach(function(btn) {
+                actualizarBoton(btn, esFavorito(btn.dataset.nregistro));
+            });
+            actualizarBadge();
+        }
+
+        document.addEventListener('click', function(e) {
+            var btn = e.target.closest('.btn-fav[data-nregistro]');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var nr = btn.dataset.nregistro;
+            var ahora = toggleFavorito(nr);
+            document.querySelectorAll('.btn-fav[data-nregistro="' + nr + '"]').forEach(function(b) {
+                actualizarBoton(b, ahora);
+            });
+            actualizarBadge();
+        });
+
+        document.body.addEventListener('htmx:afterSwap', function() {
+            inicializarBotones();
+        });
+
+        inicializarBotones();
+
+        window.FF_Favoritos = {
+            leer: leerFavoritos,
+            borrar: function(nr) {
+                var favs = leerFavoritos().filter(function(f) { return f.nregistro !== nr; });
+                guardarFavoritos(favs);
+                actualizarBadge();
+            },
+            limpiar: function() { guardarFavoritos([]); actualizarBadge(); }
+        };
     }());
     </script>
 </body>

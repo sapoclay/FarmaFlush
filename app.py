@@ -198,19 +198,25 @@ def _extraer_inn_base(inn_completo: str) -> str:
 
 def _consultas_farmacia_alternativas(med: dict, complemento: dict | None = None) -> list[str]:
     consultas = []
-    # Priorizar el principio activo específico del medicamento para obtener
-    # precios correctos en farmacias (evita que todos los resultados de una
-    # búsqueda genérica compartan la misma oferta).
+    dosis = (med.get("dosis") or "").strip()
+
     if med.get("principio_activo_texto"):
         pa = med["principio_activo_texto"]
         # Solo el nombre INN sin dosis (texto antes del primer paréntesis).
         inn = pa.split("(")[0].strip()
         if inn:
-            consultas.append(inn)
+            # Consulta principal: INN + dosis para distinguir formatos del mismo medicamento
+            # (ej. "paracetamol 650 mg" vs "paracetamol 1 g")
+            consulta_con_dosis = f"{inn} {dosis}".strip() if dosis else inn
+            consultas.append(consulta_con_dosis)
+            # Fallback: solo INN sin dosis
+            if dosis:
+                consultas.append(inn)
         # INN base sin sufijo de sal farmacéutica
         inn_base = _extraer_inn_base(inn) if inn else ""
         if inn_base and inn_base.lower() != (inn or "").lower():
-            consultas.append(inn_base)
+            inn_base_dosis = f"{inn_base} {dosis}".strip() if dosis else inn_base
+            consultas.append(inn_base_dosis)
     if complemento:
         if complemento.get("principio_activo"):
             consultas.append(complemento["principio_activo"])
@@ -734,6 +740,41 @@ def fuentes():
             entrada["envio"] = obtener_politica_envio(fid)
         fuentes_enriquecidas.append(entrada)
     return render_template("fuentes.html", fuentes=fuentes_enriquecidas)
+
+
+@app.route("/favoritos")
+def favoritos():
+    return render_template("favoritos.html")
+
+
+@app.route("/api/favoritos", methods=["POST"])
+def api_favoritos():
+    """Recibe una lista de nregistros y devuelve tarjetas HTML con datos frescos."""
+    data = request.get_json(silent=True) or {}
+    nregistros = [str(nr).strip() for nr in (data.get("nregistros") or []) if str(nr).strip()]
+    # Limitar a 50 favoritos como medida de seguridad
+    nregistros = nregistros[:50]
+
+    if not nregistros:
+        return "", 204
+
+    meds = []
+    for nr in nregistros:
+        try:
+            med_raw = cima.detalle_medicamento(nr)
+            if not med_raw:
+                continue
+            med = cima._extraer_datos(med_raw)
+            info_precio = precios.obtener_precios(nr)
+            med["precio_oficial"] = info_precio["precio_oficial"]
+            med["precio_medio"] = info_precio["precio_medio"]
+            med["fuentes_precio"] = info_precio["fuentes"]
+            med["ofertas_farmacia"] = []  # No se consultan farmacias para no demorar la carga
+            meds.append(med)
+        except Exception:
+            pass
+
+    return render_template("_favoritos_tarjetas.html", meds=meds)
 
 
 @app.route("/verificar-precio")

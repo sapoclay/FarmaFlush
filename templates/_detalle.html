@@ -18,7 +18,13 @@
         <img src="{{ med.imagen_url }}" alt="{{ med.nombre }}" style="max-width:120px; border-radius:6px;">
         {% endif %}
         <div>
-            <h2 style="margin-bottom:0.25rem;">{{ med.nombre }}</h2>
+            <h2 style="margin-bottom:0.25rem;">
+                {{ med.nombre }}
+                <button class="btn-fav btn-fav-detalle"
+                        data-nregistro="{{ med.nregistro }}"
+                        title="Guardar en favoritos"
+                        aria-pressed="false">☆</button>
+            </h2>
             <p style="margin:0;">{{ med.laboratorio }} · {{ med.forma }} · {{ med.dosis }}</p>
             <p style="margin:0.25rem 0;">
                 {% if med.receta %}
