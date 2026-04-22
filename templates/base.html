@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}FarmaFLUSH 100ml — Precios de medicamentos en España{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('media_img', filename='logo.png') }}">
+    {% block head_extra %}{% endblock %}
 
     <!-- Pico CSS — classless responsive framework (CDN) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">

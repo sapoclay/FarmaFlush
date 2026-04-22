@@ -13,8 +13,7 @@
     <dl style="margin:.75rem 0 .5rem">
         <dt style="font-size:.78rem;opacity:.6;margin-bottom:.15rem">Medicamento identificado en Nomenclátor SNS</dt>
         <dd style="margin:0;font-weight:600">
-            <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do?metodo=verDetalle&prod={{ resultado.cn }}"
-               target="_blank" rel="noopener">{{ resultado.nombre }}</a>
+            <a href="/medicamento/abrir?cn={{ resultado.cn }}&q={{ resultado.nombre|urlencode }}">{{ resultado.nombre }}</a>
             <span style="font-size:.75rem;opacity:.55;font-weight:400"> · CN {{ resultado.cn }}</span>
         </dd>
     </dl>
@@ -82,11 +81,7 @@
     <hr style="margin:1.25rem 0 .75rem;opacity:.2">
     <p style="font-size:.85rem;opacity:.65;margin:0">
         ¿Quieres consultar más información sobre este medicamento?
-        {% if resultado.nregistro %}
-        <a href="/medicamento/{{ resultado.nregistro }}?confianza={{ resultado.confianza }}" style="white-space:nowrap">Ver ficha del medicamento →</a>
-        {% else %}
-        <a href="/buscar?q={{ (q_parafarmacia or resultado.nombre)|urlencode }}" style="white-space:nowrap">Ver ficha del medicamento →</a>
-        {% endif %}
+        <a href="/buscar?q={{ (q or resultado.nombre)|urlencode }}" style="white-space:nowrap">Ver ficha del medicamento →</a>
     </p>
     {% endif %}
 </article>

@@ -6,7 +6,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import httpx
-from flask import Flask, make_response, render_template, request, send_from_directory, url_for
+from flask import Flask, make_response, render_template, request, send_from_directory, url_for, redirect
 
 from config import BASE_DIR, SECRET_KEY, DEBUG
 from database import init_db
@@ -601,6 +601,57 @@ def _ejecutar_busqueda(q: str, pagina: int, tam: int, tam_query: str, on_update=
             logging.warning("Error en Vademécum: %s", exc)
             coincidencias_vademecum = []
 
+    # Enriquecer coincidencias alternativas con nregistro para permitir
+    # abrir la ficha interna igual que en el buscador principal.
+    for item in coincidencias_nomenclator:
+        cn = (item.get("cn") or "").strip()
+        if not cn:
+            continue
+        nregistro = _buscar_nregistro_por_cn(cn)
+        if nregistro:
+            item["nregistro"] = nregistro
+
+    for vm in coincidencias_vademecum:
+        titulo = (vm.get("titulo") or "").strip()
+        if not titulo:
+            continue
+        match_vm = matcher_svc.match_producto(titulo)
+        if match_vm:
+            if match_vm.get("nregistro"):
+                vm["nregistro"] = match_vm["nregistro"]
+            if match_vm.get("cn"):
+                vm["cn"] = match_vm["cn"]
+
+            if not vm.get("nregistro") and vm.get("cn"):
+                nregistro_vm = _buscar_nregistro_por_cn(str(vm["cn"]))
+                if nregistro_vm:
+                    vm["nregistro"] = nregistro_vm
+
+    # Añadir imagen para tarjetas de Nomenclátor/Vademécum para evitar tarjetas sin visual.
+    # Reutiliza un cache local para no repetir peticiones al mismo nregistro.
+    imagen_cache: dict[str, str] = {}
+
+    def _imagen_por_nregistro(nregistro: str) -> str:
+        if not nregistro:
+            return _PRODUCT_PLACEHOLDER_URL
+        if nregistro in imagen_cache:
+            return imagen_cache[nregistro]
+        imagen_url = _PRODUCT_PLACEHOLDER_URL
+        try:
+            med_raw = cima.detalle_medicamento(nregistro)
+            if med_raw:
+                imagen_url = cima.extraer_imagen_url(med_raw) or _PRODUCT_PLACEHOLDER_URL
+        except Exception:
+            pass
+        imagen_cache[nregistro] = imagen_url
+        return imagen_url
+
+    for item in coincidencias_nomenclator:
+        item["imagen_url"] = _imagen_por_nregistro(item.get("nregistro") or "")
+
+    for vm in coincidencias_vademecum:
+        vm["imagen_url"] = _imagen_por_nregistro(vm.get("nregistro") or "")
+
     contexto["coincidencias_nomenclator"] = coincidencias_nomenclator
     contexto["coincidencias_vademecum"] = coincidencias_vademecum
     contexto["productos_farmacia"] = []
@@ -821,23 +872,25 @@ def verificar_precio():
 
     diferencia = _calcular_diferencia(resultado, precio_cobrado)
 
+    # Fallback: si el matcher no aporta nregistro pero sí CN,
+    # resolverlo para poder enlazar a la ficha interna desde el verificador.
+    if resultado and not resultado.get("nregistro") and resultado.get("cn"):
+        nregistro_por_cn = _buscar_nregistro_por_cn(str(resultado["cn"]))
+        if nregistro_por_cn:
+            resultado["nregistro"] = nregistro_por_cn
+
     # Query simplificada para buscar en parafarmacia: usar principio activo + dosis si están
     # disponibles en features, o bien las primeras palabras del nombre oficial (evita abreviaturas)
     q_parafarmacia = ""
     if resultado:
         feats = resultado.get("features") or {}
-        partes = []
+        
+        # Preferir principio activo si está disponible
         if feats.get("principio_activo"):
-            partes.append(feats["principio_activo"])
-        elif resultado.get("nombre"):
-            # Tomar las primeras 2-3 palabras del nombre oficial (antes de abreviaturas en mayúsculas)
-            palabras = resultado["nombre"].split()
-            partes = [p for p in palabras[:3] if not p.isupper() or len(p) <= 4]
-            if not partes:
-                partes = palabras[:2]
-        if feats.get("dosis_mg"):
-            partes.append(f"{feats['dosis_mg']} mg")
-        q_parafarmacia = " ".join(partes).lower() if partes else (resultado.get("nombre") or "").lower()
+            q_parafarmacia = feats["principio_activo"]
+        else:
+            # Fallback: usar el nombre completo del medicamento (más confiable que fragmentos)
+            q_parafarmacia = (resultado.get("nombre") or "").lower()
 
     contexto = {
         "q": q,
@@ -852,6 +905,99 @@ def verificar_precio():
     if _es_htmx():
         return render_template("_verificar_resultado.html", **contexto)
     return render_template("verificar.html", **contexto)
+
+
+def _buscar_nregistro_por_cn(cn: str) -> str | None:
+    """Busca el nregistro correcto para un CN consultando CIMA.
+    
+    Estrategia:
+    1. Consultar tabla medicamento_features por CN (más confiable que presentacion)
+    2. Si encuentra, obtener el nombre del medicamento
+    3. Buscar ese nombre en CIMA
+    4. Encontrar la presentación con ese CN
+    5. Devolver el nregistro
+    
+    Si no puede resolver, devuelve None.
+    """
+    cn = (cn or "").strip()
+    if not cn or not any(ch.isdigit() for ch in cn):
+        return None
+
+    # Normalizar CN para comparaciones robustas (con/sin ceros a la izquierda)
+    cn_norm = cn.lstrip("0") or "0"
+
+    # Paso 1: buscar en medicamento_features (tabla de Nomenclátor)
+    try:
+        from database import db_session
+        with db_session() as conn:
+            row = conn.execute(
+                """SELECT nombre FROM medicamento_features
+                   WHERE CAST(CAST(cn AS INTEGER) AS TEXT) = CAST(CAST(? AS INTEGER) AS TEXT)
+                   LIMIT 1""",
+                (cn_norm,),
+            ).fetchone()
+            nombre_medicamento = (row["nombre"] if row else "") or ""
+
+            # Fallback rápido: intentar resolver en tabla presentacion local
+            row_pres = conn.execute(
+                """SELECT nregistro FROM presentacion
+                   WHERE CAST(CAST(cn AS INTEGER) AS TEXT) = CAST(CAST(? AS INTEGER) AS TEXT)
+                   LIMIT 1""",
+                (cn_norm,),
+            ).fetchone()
+            if row_pres and row_pres["nregistro"]:
+                return row_pres["nregistro"]
+
+            if not nombre_medicamento:
+                return None
+    except Exception:
+        return None
+    
+    # Paso 2: buscar en CIMA por nombre para obtener todas las presentaciones
+    try:
+        resultados = cima.buscar_medicamentos(nombre_medicamento, pagina=1, tam=50)
+        for med in (resultados.get("resultados") or []):
+            nregistro = med.get("nregistro")
+            if nregistro:
+                # Paso 3: obtener detalles del medicamento para verificar que tiene el CN
+                med_raw = cima.detalle_medicamento(nregistro)
+                if med_raw:
+                    presentaciones = med_raw.get("presentaciones") or []
+                    for p in presentaciones:
+                        codigo = str(p.get("codigo") or "").strip()
+                        if (codigo.lstrip("0") or "0") == cn_norm:  # codigo es el CN en CIMA
+                            return nregistro
+    except Exception:
+        pass
+    
+    return None
+
+
+def _limpiar_y_validar_precio(precio_raw: str) -> float | None:
+    """Sanitiza y valida entrada de precio del usuario.
+    
+    Convierte comas a puntos, elimina espacios, símbolos de moneda.
+    Retorna float o None si no es válido.
+    Rango válido: 0 a 10.000€
+    """
+    if not precio_raw:
+        return None
+    
+    precio_raw = str(precio_raw).strip()
+    
+    # Limpiar caracteres comunes: espacios, símbolos de moneda, comas→puntos
+    precio_raw = precio_raw.replace(',', '.')
+    precio_raw = precio_raw.replace('€', '').replace('$', '')
+    precio_raw = precio_raw.strip()
+    
+    try:
+        precio = float(precio_raw)
+        # Validar rango
+        if precio < 0 or precio > 10_000:
+            return None
+        return round(precio, 2)
+    except (ValueError, TypeError):
+        return None
 
 
 def _calcular_diferencia(match: dict | None, precio_cobrado: float | None) -> dict | None:
@@ -897,14 +1043,7 @@ def verificar_ticket():
             nombre = nombre.strip()
             if not nombre:
                 continue
-            precio_cobrado: float | None = None
-            if precio_raw:
-                try:
-                    precio_cobrado = float(precio_raw.replace(",", ".").strip())
-                    if precio_cobrado < 0 or precio_cobrado > 10_000:
-                        precio_cobrado = None
-                except ValueError:
-                    precio_cobrado = None
+            precio_cobrado = _limpiar_y_validar_precio(precio_raw)
 
             match = matcher_svc.match_producto(nombre)
             diferencia = _calcular_diferencia(match, precio_cobrado)
@@ -935,6 +1074,17 @@ def verificar_ticket():
                 key=lambda i: i["diferencia"]["diff"],
                 default=None,
             )
+            
+            # Calcular sumatorio total de sobreprecio/ahorro
+            total_sobreprecio = sum(
+                i["diferencia"]["diff"] for i in items
+                if i["diferencia"] and i["diferencia"]["diff"] > 0
+            )
+            total_ahorro = abs(sum(
+                i["diferencia"]["diff"] for i in items
+                if i["diferencia"] and i["diferencia"]["diff"] < 0
+            ))
+            
             resumen = {
                 "total": total,
                 "con_pvp": con_pvp,
@@ -947,6 +1097,8 @@ def verificar_ticket():
                 "peor_diff": peor["diferencia"]["diff"] if peor else None,
                 "peor_pct": peor["diferencia"]["pct"] if peor else None,
                 "peor_nivel": peor["diferencia"]["nivel"] if peor else None,
+                "total_sobreprecio": round(total_sobreprecio, 2),
+                "total_ahorro": round(total_ahorro, 2),
             }
 
     if _es_htmx():
@@ -1105,11 +1257,72 @@ def progreso_busqueda(job_id: str):
     )
 
 
+@app.route("/medicamento/abrir")
+def abrir_medicamento():
+    """Resuelve un medicamento por CN o nombre y redirige a su ficha interna."""
+    cn = (request.args.get("cn") or "").strip()
+    q = (request.args.get("q") or "").strip()
+
+    if cn:
+        nregistro = _buscar_nregistro_por_cn(cn)
+        if nregistro:
+            return redirect(url_for("detalle", nregistro=nregistro, cn=cn))
+
+    if q:
+        match = matcher_svc.match_producto(q)
+        if match:
+            nregistro = match.get("nregistro")
+            cn_match = (match.get("cn") or "").strip()
+
+            if not nregistro and cn_match:
+                nregistro = _buscar_nregistro_por_cn(cn_match)
+
+            if nregistro:
+                if cn_match:
+                    return redirect(url_for("detalle", nregistro=nregistro, cn=cn_match))
+                return redirect(url_for("detalle", nregistro=nregistro))
+
+        # Fallback adicional: intentar resolver por búsqueda directa en CIMA.
+        try:
+            datos = cima.buscar_y_normalizar(q, pagina=1, tam=1)
+            resultados = (datos or {}).get("resultados") or []
+            if resultados and resultados[0].get("nregistro"):
+                return redirect(url_for("detalle", nregistro=resultados[0]["nregistro"]))
+        except Exception:
+            pass
+
+    # Fallback: volver a búsqueda general para que el usuario no quede bloqueado.
+    return redirect(url_for("buscar", q=q or cn))
+
+
 @app.route("/medicamento/<nregistro>")
 def detalle(nregistro: str):
-    """Detalle de un medicamento concreto."""
+    """Detalle de un medicamento concreto.
+    
+    Soporta parámetros opcionales:
+      - cn: código nacional específico (para preseleccionar presentación)
+      - confianza: nivel de confianza de la búsqueda
+    
+    Si viene un CN, valida que pertenezca al nregistro solicitado.
+    Si no, intenta encontrar el nregistro correcto.
+    """
+    # Si viene un CN específico, intentar obtener el nregistro correcto
+    _cn_param = request.args.get("cn", "").strip()
+    
+    # Si tenemos un CN, validar/corregir el nregistro
+    if _cn_param:
+        nregistro_correcto = _buscar_nregistro_por_cn(_cn_param)
+        if nregistro_correcto and nregistro_correcto != nregistro:
+            # El nregistro es incorrecto, redirigir al correcto
+            return redirect(url_for("detalle", nregistro=nregistro_correcto, cn=_cn_param, confianza=request.args.get("confianza", "")))
+    
     med_raw = cima.detalle_medicamento(nregistro)
     if med_raw is None:
+        # Si CIMA no tiene el nregistro pero tenemos un CN, intentar de nuevo
+        if _cn_param:
+            nregistro_correcto = _buscar_nregistro_por_cn(_cn_param)
+            if nregistro_correcto:
+                return redirect(url_for("detalle", nregistro=nregistro_correcto, cn=_cn_param, confianza=request.args.get("confianza", "")))
         return render_template("404.html"), 404
 
     # Guardar presentaciones (cn→nregistro) para cruzar con precios
@@ -1183,6 +1396,10 @@ def detalle(nregistro: str):
     _confianza_param = request.args.get("confianza", "").strip()
     if _confianza_param in ("seguro", "probable", "debil"):
         med["confianza_busqueda"] = _confianza_param
+    
+    # CN específico: viene de URL cuando el usuario llega desde el verificador de precio
+    _cn_param = request.args.get("cn", "").strip()
+    med["cn_preseleccionado"] = _cn_param if _cn_param else None
 
     if _es_htmx():
         return render_template("_detalle.html", med=med)

@@ -102,7 +102,7 @@
         </div>
 
         {% if med.presentaciones %}
-        <details>
+        <details {% if med.cn_preseleccionado %}open{% endif %}>
             <summary>Ver presentaciones ({{ med.presentaciones|length }})</summary>
             <table class="fuentes-table" role="grid">
                 <thead>
@@ -110,7 +110,7 @@
                 </thead>
                 <tbody>
                 {% for presentacion in med.presentaciones %}
-                    <tr>
+                    <tr {% if med.cn_preseleccionado and presentacion.cn == med.cn_preseleccionado %}id="cn-preseleccionado" style="background-color: var(--pico-form-element-checked-background-color); font-weight: 600;"{% endif %}>
                         <td>{{ presentacion.nombre }}</td>
                         <td>{{ presentacion.cn or "—" }}</td>
                         <td>
@@ -127,6 +127,18 @@
                 </tbody>
             </table>
         </details>
+        {% if med.cn_preseleccionado %}
+        <script>
+            (function() {
+                var elem = document.getElementById('cn-preseleccionado');
+                if (elem) {
+                    setTimeout(function() {
+                        elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                }
+            })();
+        </script>
+        {% endif %}
         {% endif %}
     </section>
 

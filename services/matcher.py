@@ -20,6 +20,7 @@ import logging
 import re
 import unicodedata
 from functools import lru_cache
+from typing import Any
 
 from rapidfuzz import fuzz
 
@@ -296,9 +297,9 @@ def match_producto(query: str) -> dict | None:
     if not candidatos:
         return None
 
-    scored: list[tuple[int, object]] = []
+    scored: list[tuple[int, Any]] = []
     for c in candidatos:
-        score: int = fuzz.token_set_ratio(query_norm, c["nombre_norm"])
+        score = int(round(fuzz.token_set_ratio(query_norm, c["nombre_norm"])))
 
         # Bonus por dosis exacta (muy discriminante, ±0 mg)
         if features["dosis_mg"] is not None and c["dosis_mg"] == features["dosis_mg"]:
@@ -322,6 +323,11 @@ def match_producto(query: str) -> dict | None:
     scored.sort(key=lambda x: x[0], reverse=True)
     top_score_raw, top = scored[0]
     top_score = min(max(int(top_score_raw), 0), 100)
+    
+    # Validación especial: si el query normalizado es exactamente igual al nombre normalizado,
+    # es un match perfecto (típico cuando el usuario escribe en minúsculas)
+    if query_norm.strip() == str(top["nombre_norm"] or "").strip():
+        top_score = 100
 
     nreg = _nregistro_por_cn(top["cn"])
     return {
@@ -401,9 +407,15 @@ def buscar_candidatos(query: str, limit: int = 10) -> list[dict]:
     if not candidatos:
         return []
 
-    scored: list[tuple[int, object]] = []
+    scored: list[tuple[int, Any]] = []
     for c in candidatos:
-        score: int = fuzz.token_set_ratio(query_norm, c["nombre_norm"])
+        score = int(round(fuzz.token_set_ratio(query_norm, c["nombre_norm"])))
+        
+        # Validación especial: si el query normalizado es exactamente igual al nombre normalizado,
+        # es un match perfecto (típico cuando el usuario escribe en minúsculas)
+        if query_norm.strip() == str(c["nombre_norm"] or "").strip():
+            score = 100
+        
         if features["dosis_mg"] is not None and c["dosis_mg"] == features["dosis_mg"]:
             score += 15
         if features["unidades"] is not None and c["unidades"] == features["unidades"]:

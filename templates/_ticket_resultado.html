@@ -46,7 +46,7 @@
     {# Veredicto global #}
     {% if resumen.excesivos > 0 %}
     <p style="margin:.5rem 0 0;padding:.6rem .9rem;background:#fee2e2;border-left:3px solid #ef4444;border-radius:4px;font-size:.9rem;color:#7f1d1d">
-        � En <strong>{{ resumen.excesivos }} producto{{ 's' if resumen.excesivos > 1 else '' }}</strong>
+        💸 En <strong>{{ resumen.excesivos }} producto{{ 's' if resumen.excesivos > 1 else '' }}</strong>
         podrías haber pagado de más — revisa los detalles abajo.
     </p>
     {% elif resumen.alertas > 0 %}
@@ -58,6 +58,25 @@
     <p style="margin:.5rem 0 0;padding:.6rem .9rem;background:#d1fae5;border-left:3px solid #10b981;border-radius:4px;font-size:.9rem;color:#064e3b">
         ✅ Todo correcto — has pagado los precios que corresponden según el Nomenclátor SNS.
     </p>
+    {% endif %}
+    
+    {# Sumatorio total #}
+    {% if resumen.total_sobreprecio > 0 or resumen.total_ahorro > 0 %}
+    <div style="margin:.75rem 0 0;padding:.65rem 1rem;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+        <span style="font-size:1.3rem;line-height:1">💰</span>
+        <div style="flex:1;min-width:0">
+            {% if resumen.total_sobreprecio > 0 %}
+            <div style="font-size:.9rem;color:#b45309;margin-bottom:.2rem">
+                En este ticket has pagado un total de <strong style="color:#dc2626;font-size:1.05rem;">+{{ "%.2f"|format(resumen.total_sobreprecio) }} €</strong> de más respecto al PVP oficial.
+            </div>
+            {% endif %}
+            {% if resumen.total_ahorro > 0 %}
+            <div style="font-size:.9rem;color:#2d5016">
+                Has ahorrado un total de <strong style="color:#16a34a;font-size:1.05rem;">{{ "%.2f"|format(resumen.total_ahorro) }} €</strong> respecto a lo que podrías haber pagado.
+            </div>
+            {% endif %}
+        </div>
+    </div>
     {% endif %}
 </article>
 

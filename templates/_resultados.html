@@ -196,7 +196,20 @@
 <div class="card-grid">
 {% for item in coincidencias_nomenclator %}
     <article class="med-card">
-        <h3>{{ item.nombre }}</h3>
+        {% if item.imagen_url %}
+        <img src="{{ item.imagen_url }}" alt="{{ item.nombre }}" loading="lazy">
+        {% endif %}
+        <h3>
+            {% if item.nregistro %}
+            <a href="/medicamento/{{ item.nregistro }}?cn={{ item.cn }}">
+                {{ item.nombre }}
+            </a>
+            {% else %}
+            <a href="{{ item.url }}" target="_blank" rel="noopener">
+                {{ item.nombre }}
+            </a>
+            {% endif %}
+        </h3>
 
         {% if item.estado %}
         <p style="margin:0.25rem 0;"><small>Estado: {{ item.estado }}</small></p>
@@ -240,6 +253,9 @@
         {% endif %}
 
         <p class="med-card-actions">
+            {% if item.nregistro %}
+            <a href="/medicamento/{{ item.nregistro }}?cn={{ item.cn }}">Ver ficha del medicamento</a>
+            {% endif %}
             <a href="{{ item.url }}" target="_blank" rel="noopener">Ver detalle en Nomenclátor</a>
         </p>
     </article>
@@ -254,8 +270,26 @@
 <div class="card-grid">
 {% for vm in coincidencias_vademecum %}
     <article class="med-card">
-        <h3>{{ vm.titulo }}</h3>
+        {% if vm.imagen_url %}
+        <img src="{{ vm.imagen_url }}" alt="{{ vm.titulo }}" loading="lazy">
+        {% endif %}
+        <h3>
+            {% if vm.nregistro %}
+            <a href="/medicamento/{{ vm.nregistro }}{% if vm.cn %}?cn={{ vm.cn }}{% endif %}">
+                {{ vm.titulo }}
+            </a>
+            {% else %}
+            <a href="/buscar?q={{ vm.titulo|urlencode }}">
+                {{ vm.titulo }}
+            </a>
+            {% endif %}
+        </h3>
         <p class="med-card-actions">
+            {% if vm.nregistro %}
+            <a href="/medicamento/{{ vm.nregistro }}{% if vm.cn %}?cn={{ vm.cn }}{% endif %}">Ver ficha del medicamento</a>
+            {% else %}
+            <a href="/buscar?q={{ vm.titulo|urlencode }}">Ver ficha del medicamento</a>
+            {% endif %}
             <a href="{{ vm.url }}" target="_blank" rel="noopener">Ver ficha en Vademécum</a>
         </p>
     </article>
