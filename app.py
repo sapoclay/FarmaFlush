@@ -781,6 +781,20 @@ def media_img(filename: str):
     return send_from_directory(BASE_DIR / "img", filename)
 
 
+@app.route("/manifest.json")
+def pwa_manifest():
+    return send_from_directory(BASE_DIR / "static", "manifest.json")
+
+
+@app.route("/sw.js")
+def service_worker():
+    response = make_response(send_from_directory(BASE_DIR / "static", "sw.js"))
+    response.headers["Service-Worker-Allowed"] = "/"
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["Content-Type"] = "application/javascript"
+    return response
+
+
 @app.route("/fuentes")
 def fuentes():
     fuentes_enriquecidas = []

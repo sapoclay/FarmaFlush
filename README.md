@@ -259,6 +259,52 @@ Texto libre → normalizar (sin números, sin stopwords)
 
 **Comportamiento por nivel de confianza:**
 
+---
+
+## Frontend y rendimiento (actualización)
+
+Se ha realizado una limpieza de arquitectura en frontend para mejorar mantenibilidad y rendimiento percibido:
+
+### Separación de responsabilidades
+
+- `templates/base.html` se mantiene como layout limpio (estructura + enlaces a assets)
+- Estilos movidos a `static/css/style.css`
+- Lógica cliente movida a `static/js/app.js`
+
+### Beneficio de caché del navegador
+
+Al externalizar CSS y JS, el navegador puede cachear estos archivos y reutilizarlos entre páginas, reduciendo tiempos de carga y mejorando la navegación interna.
+
+### HTMX: indicador de carga unificado
+
+La aplicación usa un único indicador de progreso global:
+
+- En `base.html`: `hx-indicator="#global-progress"`
+- Se eliminó el segundo sistema de progreso para evitar duplicidad visual y lógica
+
+### Inicialización JS y rendimiento en scroll
+
+- Toda la lógica DOM se inicializa bajo `DOMContentLoaded` en `app.js`
+- Se aplica `requestAnimationFrame` throttle (`rafThrottle`) en listeners de scroll para evitar recalcular en cada píxel
+- Este ajuste se usa en el botón "Subir arriba" y en el modo de cabecera compacta (`body.logo-compacto`)
+
+### PWA (recordatorio)
+
+La app incluye soporte PWA con:
+
+- `static/manifest.json`
+- `static/sw.js` (Service Worker)
+- Iconos instalables en `static/img/icon-192.png` y `static/img/icon-512.png`
+
+Además, en móvil se muestra un banner de instalación con botón de acción:
+
+- Si el navegador expone `beforeinstallprompt` (Android/Chrome), el botón abre el prompt nativo de instalación.
+- En iOS/Safari, el botón muestra instrucciones para "Añadir a pantalla de inicio".
+- Si el usuario cierra el banner o rechaza el prompt, el aviso se pausa y vuelve a mostrarse a los 7 días.
+- Si la app se instala (`appinstalled`), el banner deja de mostrarse.
+
+Para instalación en móvil en entorno real, es necesario HTTPS en producción.
+
 | Confianza | Score | Comportamiento |
 |-----------|-------|----------------|
 | `seguro` | ≥ 92 | Muestra veredicto directo con badge ALTA |
