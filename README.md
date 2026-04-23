@@ -110,6 +110,10 @@ Configura un reverse proxy (nginx/caddy) delante para HTTPS.
 
 ## Arquitectura
 
+<div align="center">
+<img width="761" height="1238" alt="inicio" src="https://github.com/user-attachments/assets/ed2bb897-f54f-4481-87cb-abde0bbd0599" />
+</div>
+
 ```text
 FarmaFLUSH/
 ├── app.py                  # Aplicación Flask principal
@@ -211,6 +215,10 @@ Con la caché en SQLite, cada búsqueda responde en milisegundos y la aplicació
 
 ### 1. Verificador de precio individual (`/verificar-precio`)
 
+<div align="center">
+<img width="993" height="1602" alt="busqueda-medicamentos" src="https://github.com/user-attachments/assets/c015a2bd-0b9e-4253-a5b4-64d855d7e57e" />
+</div>
+
 El usuario introduce el nombre de un medicamento y el precio cobrado. El sistema:
 
 1. Localiza el medicamento en el Nomenclátor SNS mediante el **hybrid matcher** (FTS5 + rapidfuzz)
@@ -228,6 +236,10 @@ El usuario introduce el nombre de un medicamento y el precio cobrado. El sistema
 5. Si la confianza es `probable` (score 80-91) o `débil` (score < 80), el sistema **no muestra el veredicto directamente**: presenta los candidatos más cercanos para que el usuario confirme cuál corresponde antes de ver la comparativa de precios.
 
 ### 2. Modo ticket — auditoría multi-producto (`/verificar-ticket`)
+
+<div align="center">
+<img width="1031" height="1802" alt="verificador-ticket" src="https://github.com/user-attachments/assets/1f84a638-ddbc-4a7d-9d1d-f522bab22a73" />
+</div>
 
 El usuario introduce varios productos de su ticket:
 
@@ -343,6 +355,10 @@ La situación se obtiene scrapeando el formulario BIFIMED en dos pasos (GET de c
 - Caché de 12 horas por `consulta + página + tamaño`
 
 ### 5. Comparativa de precios online (parafarmacia)
+
+<div align="center">
+<img width="1047" height="1750" alt="parafarmacia" src="https://github.com/user-attachments/assets/7c584e5d-a4de-4b0c-9617-f1609e945f6e" />
+</div>
 
 - Búsqueda paralela en 9 farmacias online españolas
 - El usuario puede o no introducir su precio de mostrador para comparar
