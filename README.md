@@ -1,10 +1,12 @@
 # 💊 FarmaFLUSH — Verificador de precio de medicamentos en España
-<div style=align:"center">
-<img width="350" height="350" alt="farmaflush" src="https://github.com/user-attachments/assets/c266f33a-1fab-43c4-aa97-a51188430f6f" />
+<div align="center">
+  <img width="350" height="350" alt="farmaflush" src="https://github.com/user-attachments/assets/c266f33a-1fab-43c4-aa97-a51188430f6f" />
 
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Python: 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)
-![Framework: Flask](https://img.shields.io/badge/framework-Flask-lightgrey.svg)
+  <br />
+
+  ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+  ![Python: 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)
+  ![Framework: Flask](https://img.shields.io/badge/framework-Flask-lightgrey.svg)
 </div>
 Verificador de precios de medicamentos (PVP Oficial) y comparador de parafarmacia.
 
