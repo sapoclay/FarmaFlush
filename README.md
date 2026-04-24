@@ -24,9 +24,9 @@ El proyecto está desplegado actualmente en: <https://farmaflush.pythonanywhere.
 
 Debido a que esta instancia se ejecuta en el plan gratuito de PythonAnywhere, existen restricciones de red (whitelist) que impiden la conexión saliente a dominios gubernamentales como el CIMA (Agencia Española de Medicamentos).
 
-    * **¿Qué funciona en la demo?**: El sistema de tickets, la lógica de la PWA, la interfaz de usuario y el scraping de parafarmacia (ej. DosFarma).
+    - **¿Qué funciona en la demo?**: El sistema de tickets, la lógica de la PWA, la interfaz de usuario y el scraping de parafarmacia (ej. DosFarma).
 
-    * **¿Qué está restringido?**: La consulta de medicamentos en tiempo real por el firewall del hosting.
+    - **¿Qué está restringido?**: La consulta de medicamentos en tiempo real por el firewall del hosting.
 
 Para una experiencia completa sin restricciones, se recomienda ejecutar el proyecto en un servidor local o un hosting sin limitaciones de proxy.
 
@@ -435,7 +435,7 @@ El usuario puede guardar medicamentos con el botón ☆ presente en cada tarjeta
 - **Aviso informativo** visible en la página: _"Esta lista es informativa de precios y fichas técnicas. No sustituye la pauta establecida por su médico ni el consejo de su farmacéutico."_
 - El badge numérico en el header compacto muestra cuántos medicamentos hay guardados.
 
-### 8. Circuit breaker en scrapers
+### 12. Circuit breaker en scrapers
 
 Todos los scrapers con cliente HTTP persistente implementan un circuit breaker:
 - Timeout de lectura reducido a 6 s (antes 10 s)
