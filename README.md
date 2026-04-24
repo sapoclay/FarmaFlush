@@ -16,11 +16,19 @@ FarmaFLUSH es una aplicación web (PWA) diseñada para estar informados sobre "p
 
 Este proyecto nace de una necesidad real y personal: garantizar que el derecho a la salud no se vea afectado por "errores" en el redondeo o sobreprecios aplicados a medicamentos con precio regulado. FarmaFLUSH utiliza datos abiertos y técnicas de agregación de datos para ofrecer transparencia inmediata al ciudadano.
 
-**Demo**
-Actualmente no tengo alojado el proyecto en ningún servidor funcional, pero lo he subido a <https://farmaflush.pythonanywhere.com>. 
-En este alojamiento funcionan muchas de las opciones, salvo la posibilidad de buscar medicamentos. Para ello cada uno
-tendrá que alojar el proyecto en su propio servidor, ya que Pythoneverywhere no permite scrapear las url de las que se toman
-los medicamentos.
+**Demo Online**
+
+El proyecto está desplegado actualmente en: <https://farmaflush.pythonanywhere.com>
+
+***Nota sobre la Demo***:
+
+Debido a que esta instancia se ejecuta en el plan gratuito de PythonAnywhere, existen restricciones de red (whitelist) que impiden la conexión saliente a dominios gubernamentales como el CIMA (Agencia Española de Medicamentos).
+
+    * **¿Qué funciona en la demo?**: El sistema de tickets, la lógica de la PWA, la interfaz de usuario y el scraping de parafarmacia (ej. DosFarma).
+
+    * **¿Qué está restringido?**: La consulta de medicamentos en tiempo real por el firewall del hosting.
+
+Para una experiencia completa sin restricciones, se recomienda ejecutar el proyecto en un servidor local o un hosting sin limitaciones de proxy.
 
 ---
 
