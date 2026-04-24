@@ -60,7 +60,7 @@
             {% endif %}
         {% endfor %}
 
-        {% if _gmin.val is not none and _gmin.url is not none %}
+        {% if _gmin.val is not none %}
             <p class="precio-oficial" style="text-align:right;">
                 El precio más bajo encontrado es de:
                 {% if _gmin.url %}
@@ -82,8 +82,10 @@
                             ✅ El precio coincide con el PVP oficial registrado.
                         </p>
                     {% elif precio_mostrador < _gmin.val - _tolerancia %}
+                        {% set _diff_abs = (_gmin.val - precio_mostrador) %}
                         <p class="comparativa-mostrador comparativa-buen-precio">
                             ℹ️ El precio introducido es <strong>inferior al PVP oficial</strong> ({{ "%.2f"|format(_gmin.val) }} €).
+                            Diferencia: <strong>-{{ "%.2f"|format(_diff_abs) | replace(".", ",") }} €</strong>.
                             Puede tratarse de un copago, descuento o formato distinto.
                         </p>
                     {% elif precio_mostrador > _gmin.val * 1.10 %}
@@ -108,12 +110,14 @@
                     {% if _diff > 0.05 %}
                         {% set _pct = ((_diff / _gmin.val) * 100) | round(0) | int %}
                         <p class="comparativa-mostrador comparativa-sobreprecio">
-                            💰 {{ _gmin.fuente }} lo tiene a <strong>{{ "%.2f"|format(_gmin.val) }} €</strong>
-                            ({{ "%.2f"|format(_diff) | replace(".", ",") }} € menos).
+                            💰 Has pagado <strong>de más</strong>: +{{ "%.2f"|format(_diff) | replace(".", ",") }} €
+                            frente al mejor precio encontrado en {{ _gmin.fuente }} (<strong>{{ "%.2f"|format(_gmin.val) }} €</strong>).
                         </p>
                     {% elif _diff < -0.05 %}
+                        {% set _ahorro = (_diff | abs) %}
                         <p class="comparativa-mostrador comparativa-buen-precio">
-                            ✅ Tu farmacia tiene un precio similar o mejor que el encontrado online.
+                            ✅ Has pagado <strong>de menos</strong>: -{{ "%.2f"|format(_ahorro) | replace(".", ",") }} €
+                            respecto al mejor precio online encontrado.
                         </p>
                     {% else %}
                         <p class="comparativa-mostrador comparativa-precio-igual">
@@ -122,12 +126,6 @@
                     {% endif %}
                 {% endif %}
             {% endif %}
-        {% elif _gmin.val is not none %}
-            <p class="precio-oficial" style="text-align:right;">
-                Precio de referencia:
-                <strong>{{ "%.2f"|format(_gmin.val) }} €</strong>
-                <small>({{ _gmin.fuente }})</small>
-            </p>
         {% elif med.receta %}
             <p><small class="text-muted" title="{{ med.tipo_prescripcion }}">💊 Medicamento con receta · Consulta el precio en tu farmacia o en el <a href="https://www.sanidad.gob.es/profesionales/nomenclator.do" target="_blank" rel="noopener">Nomenclátor del SNS</a></small></p>
         {% else %}
@@ -226,8 +224,10 @@
                         ✅ El precio coincide con el PVP oficial registrado.
                     </p>
                 {% elif precio_mostrador < item.precio - _tolerancia %}
+                    {% set _ahorro = (item.precio - precio_mostrador) %}
                     <p class="comparativa-mostrador comparativa-buen-precio">
                         ℹ️ El precio introducido es <strong>inferior al PVP oficial</strong> ({{ "%.2f"|format(item.precio) }} €).
+                        Diferencia: <strong>-{{ "%.2f"|format(_ahorro) | replace(".", ",") }} €</strong>.
                         Puede tratarse de un copago, descuento o formato distinto.
                     </p>
                 {% elif precio_mostrador > item.precio * 1.10 %}
