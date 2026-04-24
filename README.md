@@ -544,7 +544,7 @@ conn.execute('PRAGMA journal_mode=WAL')
 
 ## 📝 Licencia y aviso legal
 
-Este proyecto es de uso personal y educativo para practicar con Flask y Python, sin ánimo de lucro.
+Este proyecto es de uso personal y educativo para practicar con Flask y Python, sin ánimo de lucro. Licencia MIT.
 
 ### Datos oficiales
 
